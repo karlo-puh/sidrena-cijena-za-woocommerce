@@ -73,4 +73,4 @@ jobs:
       - name: Check real product saves, admin pricing, CSV import and variations
         env:
           WP_CLI_PHP_ARGS: '-d memory_limit=512M'
-        run: wp eval-file tests/integration/first-offer.php --path=/tmp/scwc-wp
+        run: wp eval-file tests/integration/first-offer.php --path=/tmp/scwc-wp --user=test

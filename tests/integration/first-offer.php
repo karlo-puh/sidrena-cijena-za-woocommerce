@@ -62,7 +62,7 @@ $temporary = tempnam( sys_get_temp_dir(), 'scwc-import-' );
 $csv = $temporary . '.csv';
 rename( $temporary, $csv );
 file_put_contents( $csv, "Type,SKU,Name,Published,Regular price\nsimple,scwc-import-test,Imported book,1,36\n" );
-$params = [ 'mapping' => [ 'Type' => 'type', 'SKU' => 'sku', 'Name' => 'name', 'Published' => 'published', 'Regular price' => 'regular_price' ] ];
+$params = [ 'parse' => true, 'mapping' => [ 'Type' => 'type', 'SKU' => 'sku', 'Name' => 'name', 'Published' => 'published', 'Regular price' => 'regular_price' ] ];
 $result = ( new WC_Product_CSV_Importer( $csv, $params ) )->import();
 $importId = wc_get_product_id_by_sku( 'scwc-import-test' );
 $assert( empty( $result['failed'] ) && $importId > 0 && '36' === $anchor( $importId ), 'Native WooCommerce CSV import captures the initial price.' );
