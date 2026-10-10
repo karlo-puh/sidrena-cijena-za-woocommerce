@@ -48,8 +48,14 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mysqli, mbstring, xmlwriter, dom
-          tools: wp-cli
+          tools: none
           coverage: none
+      - name: Install verified WP-CLI
+        run: |
+          curl --fail --location --retry 3 https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar -o /tmp/wp
+          echo 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c  /tmp/wp' | sha256sum --check
+          chmod +x /tmp/wp
+          echo /tmp >> "$GITHUB_PATH"
       - name: Install disposable WordPress and WooCommerce
         env:
           WP_CLI_PHP_ARGS: '-d memory_limit=512M'
