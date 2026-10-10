@@ -115,6 +115,13 @@ if ( ! class_exists( 'WC_Product' ) ) {
 		public function add_meta_data( string $key, $value, bool $unique = false ): void { $this->meta[ $key ] = $value; }
 		public function delete_meta_data( string $key ): void { unset( $this->meta[ $key ] ); }
 		/** @return array<string,mixed> */
+		public function read_meta_data( bool $force_read = false ): void {
+			if ( $force_read ) {
+				foreach ( (array) get_post_meta( $this->get_id() ) as $key => $values ) {
+					$this->meta[ $key ] = is_array( $values ) ? ( $values[0] ?? '' ) : $values;
+				}
+			}
+		}
 		public function all_meta(): array { return $this->meta; }
 		public function save(): int { $this->props['saved'] = ( $this->props['saved'] ?? 0 ) + 1; return $this->get_id(); }
 		public function save_count(): int { return (int) ( $this->props['saved'] ?? 0 ); }

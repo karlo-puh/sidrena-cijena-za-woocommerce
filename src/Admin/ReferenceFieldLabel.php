@@ -37,11 +37,12 @@ final class ReferenceFieldLabel {
 	/** Human label for a `_source` meta value. */
 	public static function source( string $source ): string {
 		$map = [
-			'manual'    => __( 'ručni unos', 'sidrena-cijena-za-woocommerce' ),
-			'snapshot'  => __( 'snapshot', 'sidrena-cijena-za-woocommerce' ),
-			'import'    => __( 'CSV uvoz', 'sidrena-cijena-za-woocommerce' ),
-			'auto'      => __( 'automatski snapshot', 'sidrena-cijena-za-woocommerce' ),
-			'inherited' => __( 'naslijeđeno', 'sidrena-cijena-za-woocommerce' ),
+			'first_offer' => __( 'prva objava proizvoda', 'sidrena-cijena-za-woocommerce' ),
+			'manual'      => __( 'ručni unos', 'sidrena-cijena-za-woocommerce' ),
+			'snapshot'    => __( 'snapshot', 'sidrena-cijena-za-woocommerce' ),
+			'import'      => __( 'CSV uvoz', 'sidrena-cijena-za-woocommerce' ),
+			'auto'        => __( 'automatski snapshot', 'sidrena-cijena-za-woocommerce' ),
+			'inherited'   => __( 'naslijeđeno', 'sidrena-cijena-za-woocommerce' ),
 		];
 		return $map[ $source ] ?? $source;
 	}

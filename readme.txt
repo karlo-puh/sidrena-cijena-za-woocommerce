@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -96,6 +96,10 @@ Da, najmanje 30 dana. Dodatak čuva i javno poslužuje verzije prema postavci za
 Iz najniže cijene u 30 dana prije početka sniženja (a ne iz redovne cijene), zaokruženo na niže.
 
 == Changelog ==
+
+= 1.2.2 =
+* Automatski sprema prvu redovnu cijenu i datum za nove proizvode i varijacije pri objavi.
+* Ažuriranja ovog forka preuzimaju se iz karlo-puh/sidrena-cijena-za-woocommerce.
 
 = 1.2.1 =
 * Dodatak više ne ovisi o Composeru: radi iz bilo kojeg ZIP-a (izdanje, GitHub „Source code” ili git clone). Uklonjena poruka o nedostajućem vendor/autoload.php.

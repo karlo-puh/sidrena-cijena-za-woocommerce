@@ -14,11 +14,12 @@ use SidrenaCijena\Support\DateFormat;
 
 final class ReferencePriceRepository {
 
-	public const SOURCE_MANUAL    = 'manual';
-	public const SOURCE_SNAPSHOT  = 'snapshot';
-	public const SOURCE_IMPORT    = 'import';
-	public const SOURCE_AUTO      = 'auto';
-	public const SOURCE_INHERITED = 'inherited';
+	public const SOURCE_FIRST_OFFER = 'first_offer';
+	public const SOURCE_MANUAL      = 'manual';
+	public const SOURCE_SNAPSHOT    = 'snapshot';
+	public const SOURCE_IMPORT      = 'import';
+	public const SOURCE_AUTO        = 'auto';
+	public const SOURCE_INHERITED   = 'inherited';
 
 	public function __construct( private readonly ReferenceDateResolver $dates ) {}
 

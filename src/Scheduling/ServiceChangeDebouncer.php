@@ -26,6 +26,7 @@ final class ServiceChangeDebouncer {
 		add_action( 'scwc_product_removed', [ $this, 'onProductRemoved' ] );
 		add_action( 'scwc_snapshot_completed', [ $this, 'onBulkChange' ] );
 		add_action( 'scwc_import_completed', [ $this, 'onBulkChange' ] );
+		add_action( 'scwc_first_offer_captured', [ $this, 'onBulkChange' ] );
 	}
 
 	/**

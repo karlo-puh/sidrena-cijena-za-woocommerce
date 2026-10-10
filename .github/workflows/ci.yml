@@ -28,3 +28,42 @@ jobs:
         run: composer phpstan
       - name: PHPCS
         run: vendor/bin/phpcs
+
+  woocommerce:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: wordpress
+          MYSQL_DATABASE: wordpress
+        ports: [ '3306:3306' ]
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pwordpress"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, xmlwriter, dom
+          tools: wp-cli
+          coverage: none
+      - name: Install disposable WordPress and WooCommerce
+        env:
+          WP_CLI_PHP_ARGS: '-d memory_limit=512M'
+        run: |
+          mkdir -p /tmp/scwc-wp
+          wp core download --path=/tmp/scwc-wp
+          wp config create --path=/tmp/scwc-wp --dbname=wordpress --dbuser=root --dbpass=wordpress --dbhost=127.0.0.1
+          wp config set DISABLE_WP_CRON true --raw --path=/tmp/scwc-wp
+          wp core install --path=/tmp/scwc-wp --url=http://localhost --title=Test --admin_user=test --admin_password=test-password --admin_email=test@example.com --skip-email
+          wp option update timezone_string Europe/Zagreb --path=/tmp/scwc-wp
+          wp plugin install woocommerce --version=9.9.0 --activate --path=/tmp/scwc-wp
+          bash bin/build-zip.sh
+          unzip -q dist/*.zip -d /tmp/scwc-wp/wp-content/plugins
+          wp plugin activate sidrena-cijena-za-woocommerce --path=/tmp/scwc-wp
+      - name: Check real product saves, admin pricing, CSV import and variations
+        env:
+          WP_CLI_PHP_ARGS: '-d memory_limit=512M'
+        run: wp eval-file tests/integration/first-offer.php --path=/tmp/scwc-wp

@@ -65,6 +65,7 @@ use SidrenaCijena\Product\ProductAdapter;
 use SidrenaCijena\Product\ProductSnapshot;
 use SidrenaCijena\Product\ServiceRule;
 use SidrenaCijena\Reference\CategoryOverrideResolver;
+use SidrenaCijena\Reference\FirstOfferCapture;
 use SidrenaCijena\Reference\MissingReferenceCounter;
 use SidrenaCijena\Reference\ReferenceDateResolver;
 use SidrenaCijena\Reference\ReferencePriceRegistry;
@@ -153,6 +154,9 @@ final class Plugin {
 		$this->get( Assets::class )->register();
 		$this->get( ExtendStoreApi::class )->register();
 
+		// First-offer anchors are independent of optional 30-day history.
+		$this->get( FirstOfferCapture::class )->register();
+
 		// History / Omnibus.
 		if ( (bool) $this->get( Settings::class )->get( 'history.enabled', true ) ) {
 			$this->get( PriceChangeListener::class )->register();
@@ -175,6 +179,7 @@ final class Plugin {
 		};
 		add_action( 'scwc_snapshot_completed', $flush );
 		add_action( 'scwc_import_completed', $flush );
+		add_action( 'scwc_first_offer_captured', $flush );
 
 		if ( is_admin() ) {
 			$this->get( SettingsPage::class )->register();
@@ -251,6 +256,7 @@ final class Plugin {
 			return $product instanceof WC_Product ? $product : null;
 			}
 		);
+		$c->set( FirstOfferCapture::class, static fn( Container $c ) => new FirstOfferCapture( $c->get( ReferencePriceRegistry::class ), $c->get( ReferencePriceRepository::class ), $c->get( ProductAdapter::class ), $c->get( Clock::class ), $c->get( 'product_loader' ) ) );
 		$c->set( 'request_context', static fn() => static fn(): RequestContext => RequestContext::fromGlobals() );
 
 		// Display.
@@ -423,7 +429,7 @@ final class Plugin {
 			)
 		);
 
-		$c->set( GitHubUpdater::class, static fn() => new GitHubUpdater( 'kbiro-nander/sidrena-cijena-za-woocommerce', plugin_basename( SCWC_PLUGIN_FILE ), SCWC_VERSION ) );
+		$c->set( GitHubUpdater::class, static fn() => new GitHubUpdater( 'karlo-puh/sidrena-cijena-za-woocommerce', plugin_basename( SCWC_PLUGIN_FILE ), SCWC_VERSION ) );
 
 		// CLI.
 		$c->set(

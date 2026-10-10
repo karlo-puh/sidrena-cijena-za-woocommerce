@@ -1,5 +1,17 @@
 # Sidrena cijena za WooCommerce
 
+## Održavani fork
+
+Ovo je fork projekta [Kristijana Biroa](https://github.com/kbiro-nander/sidrena-cijena-za-woocommerce), pod izvornom MIT licencom. Verzija **1.2.2** dodaje automatsku sidrenu cijenu za nove artikle i preusmjerava ugrađeni updater na [izdanja ovog repozitorija](https://github.com/karlo-puh/sidrena-cijena-za-woocommerce/releases).
+
+- Za proizvode stvorene dok je ova verzija aktivna, prva objava s cijenom sprema redovnu cijenu i datum te objave u vremenskoj zoni trgovine. Nacrti čekaju objavu; varijacije čekaju i objavljen roditeljski proizvod.
+- Koriste se standardni WordPress/WooCommerce hookovi: ručni unos, WooCommerce CSV uvoz i CRUD/API spremanje. Izravni upisi u bazu nisu podržani.
+- Postojeće ručno unesene/uvezene reference i oznaka „nema referentne cijene” ostaju sačuvane. Kasnije promjene cijene ne mijenjaju sidrenu. Duplicirani proizvodi s kopiranom referencom također zadržavaju tu referencu; provjerite je ako kopiju koristite za drugi artikl.
+- Postojeći artikli bez sidrene (uključujući ranije stvorene nacrte) ne popunjavaju se današnjom cijenom. Za njih unesite ili uvezite provjerenu početnu cijenu i stvarni datum. Plugin mora biti aktivan tijekom stvaranja i prve objave novih artikala.
+- Početno prijeđite na fork prijenosom ZIP-a iz Releases preko **Dodaci → Dodaj novi → Prenesi dodatak → Zamijeni postojeću verziju**. Ne brišite prethodni plugin. Direktorij i ključevi podataka ostaju isti. Sljedeća ažuriranja dolaze s ovog forka.
+
+Izvorna dokumentacija ispod opisuje ostatak funkcionalnosti verzije 1.2.1.
+
 > **Napomena: ovaj projekt je „vibe coded”** – razvijen uz pomoć umjetne inteligencije (Claude) prema tekstu propisa, pokriven automatiziranim testovima i isproban na stvarnom webshopu, ali **nije ga pregledao pravnik**. Koristite ga **isključivo na vlastitu odgovornost**: prije 1. 10. 2026. provjerite ga na vlastitoj trgovini, usporedite izlaz s propisima i po potrebi se posavjetujte s pravnim savjetnikom. Autor ne odgovara za bilo kakvu štetu, kaznu ili trošak (v. [Licenca i odricanje od odgovornosti](#licenca-i-odricanje-od-odgovornosti)).
 
 WordPress/WooCommerce dodatak koji hrvatskim webshopovima omogućuje usklađenost s obvezama koje stupaju na snagu **1. listopada 2026.**:

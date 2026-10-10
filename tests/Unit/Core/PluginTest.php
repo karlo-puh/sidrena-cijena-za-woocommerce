@@ -35,6 +35,15 @@ final class PluginTest extends TestCase {
 		self::assertArrayHasKey( 'sidrena_cijena', $GLOBALS['scwc_test_shortcodes'] );
 	}
 
+	public function test_first_offer_capture_is_enabled_even_when_history_is_disabled(): void {
+		$container = new \SidrenaCijena\Container();
+		$plugin = new Plugin( $container );
+		$container->set( Settings::class, static fn() => new Settings( [ 'history' => [ 'enabled' => false ] ] ) );
+		Actions\expectAdded( 'woocommerce_after_product_object_save' )->once();
+		Actions\expectAdded( 'woocommerce_product_object_updated_props' )->never();
+		$plugin->boot();
+	}
+
 	public function test_admin_services_register_when_in_admin(): void {
 		\Brain\Monkey\Functions\when( 'is_admin' )->justReturn( true );
 		Actions\expectAdded( 'admin_menu' )->atLeast()->twice();

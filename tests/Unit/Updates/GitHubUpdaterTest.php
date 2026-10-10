@@ -8,7 +8,7 @@ use SidrenaCijena\Tests\TestCase;
 use SidrenaCijena\Updates\GitHubUpdater;
 
 final class GitHubUpdaterTest extends TestCase {
-	private const API = 'https://api.github.com/repos/kbiro-nander/sidrena-cijena-za-woocommerce/releases/latest';
+	private const API = 'https://api.github.com/repos/karlo-puh/sidrena-cijena-za-woocommerce/releases/latest';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -19,16 +19,25 @@ final class GitHubUpdaterTest extends TestCase {
 	private function release( string $tag = 'v1.2.0', bool $withAsset = true ): void {
 		$GLOBALS['scwc_test_http_get'][ self::API ] = [ 'response' => [ 'code' => 200 ], 'body' => json_encode( [
 			'tag_name'     => $tag,
-			'html_url'     => 'https://github.com/kbiro-nander/sidrena-cijena-za-woocommerce/releases/tag/' . $tag,
+			'html_url'     => 'https://github.com/karlo-puh/sidrena-cijena-za-woocommerce/releases/tag/' . $tag,
 			'body'         => "## Novo\n* nešto",
 			'published_at' => '2026-10-01T06:00:00Z',
-			'zipball_url'  => 'https://api.github.com/repos/kbiro-nander/sidrena-cijena-za-woocommerce/zipball/' . $tag,
-			'assets'       => $withAsset ? [ [ 'name' => 'sidrena-cijena-za-woocommerce-1.2.0.zip', 'browser_download_url' => 'https://github.com/kbiro-nander/sidrena-cijena-za-woocommerce/releases/download/' . $tag . '/sidrena-cijena-za-woocommerce-1.2.0.zip' ] ] : [],
+			'zipball_url'  => 'https://api.github.com/repos/karlo-puh/sidrena-cijena-za-woocommerce/zipball/' . $tag,
+			'assets'       => $withAsset ? [ [ 'name' => 'sidrena-cijena-za-woocommerce-1.2.0.zip', 'browser_download_url' => 'https://github.com/karlo-puh/sidrena-cijena-za-woocommerce/releases/download/' . $tag . '/sidrena-cijena-za-woocommerce-1.2.0.zip' ] ] : [],
 		] ) ];
 	}
 
+	public function test_fork_ignores_the_original_repository_release_cache(): void {
+		$GLOBALS['scwc_test_transients']['scwc_github_release'] = [ 'version' => '99.0.0', 'package' => 'https://example.com/upstream.zip' ];
+		$this->release();
+		$release = ( new \SidrenaCijena\Plugin() )->get( GitHubUpdater::class )->latest();
+		self::assertSame( '1.2.0', $release['version'] );
+		self::assertStringStartsWith( 'https://github.com/karlo-puh/', $release['package'] );
+		unset( $GLOBALS['scwc_test_transients']['scwc_github_release'] );
+	}
+
 	private function updater( string $current = '1.1.3' ): GitHubUpdater {
-		return new GitHubUpdater( 'kbiro-nander/sidrena-cijena-za-woocommerce', 'sidrena-cijena-za-woocommerce/sidrena-cijena-za-woocommerce.php', $current );
+		return new GitHubUpdater( 'karlo-puh/sidrena-cijena-za-woocommerce', 'sidrena-cijena-za-woocommerce/sidrena-cijena-za-woocommerce.php', $current );
 	}
 
 	public function test_registers_update_and_info_filters(): void {
@@ -89,9 +98,9 @@ final class GitHubUpdaterTest extends TestCase {
 
 	public function test_extracted_folder_is_renamed_to_the_plugin_slug(): void {
 		$base = sys_get_temp_dir() . '/scwc-upd-' . uniqid();
-		mkdir( $base . '/kbiro-nander-sidrena-cijena-za-woocommerce-abc123', 0755, true );
+		mkdir( $base . '/karlo-puh-sidrena-cijena-za-woocommerce-abc123', 0755, true );
 		$u   = $this->updater();
-		$out = $u->renameSource( $base . '/kbiro-nander-sidrena-cijena-za-woocommerce-abc123/', $base . '/', new \stdClass(), [ 'plugin' => 'sidrena-cijena-za-woocommerce/sidrena-cijena-za-woocommerce.php' ] );
+		$out = $u->renameSource( $base . '/karlo-puh-sidrena-cijena-za-woocommerce-abc123/', $base . '/', new \stdClass(), [ 'plugin' => 'sidrena-cijena-za-woocommerce/sidrena-cijena-za-woocommerce.php' ] );
 		self::assertSame( $base . '/sidrena-cijena-za-woocommerce/', $out );
 		self::assertDirectoryExists( $base . '/sidrena-cijena-za-woocommerce' );
 		self::assertSame( $base . '/sidrena-cijena-za-woocommerce/', $u->renameSource( $base . '/sidrena-cijena-za-woocommerce/', $base . '/', new \stdClass(), [ 'plugin' => 'sidrena-cijena-za-woocommerce/sidrena-cijena-za-woocommerce.php' ] ), 'already correct' );
