@@ -58,7 +58,9 @@ $assert( str_contains( $html, '42' ) && str_contains( $html, 'scwc-badge' ), 'St
 // The built-in CSV importer must exercise its real mapping and CRUD save path.
 require_once WC_ABSPATH . 'includes/import/abstract-wc-product-importer.php';
 require_once WC_ABSPATH . 'includes/import/class-wc-product-csv-importer.php';
-$csv = tempnam( sys_get_temp_dir(), 'scwc-import-' );
+$temporary = tempnam( sys_get_temp_dir(), 'scwc-import-' );
+$csv = $temporary . '.csv';
+rename( $temporary, $csv );
 file_put_contents( $csv, "Type,SKU,Name,Published,Regular price\nsimple,scwc-import-test,Imported book,1,36\n" );
 $params = [ 'mapping' => [ 'Type' => 'type', 'SKU' => 'sku', 'Name' => 'name', 'Published' => 'published', 'Regular price' => 'regular_price' ] ];
 $result = ( new WC_Product_CSV_Importer( $csv, $params ) )->import();
