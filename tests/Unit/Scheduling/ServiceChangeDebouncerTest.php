@@ -65,6 +65,24 @@ final class ServiceChangeDebouncerTest extends TestCase {
 		self::assertCount( 0, $this->generated() );
 	}
 
+	public function test_daily_only_mode_keeps_one_daily_export_despite_product_events(): void {
+		$settings = ( new Settings( Defaults::all() ) )->with( 'price_list.regenerate_on_change', 'never' );
+		$scheduler = new Scheduler( new ActionSchedulerBackend(), $settings, new FixedClock( '2026-10-01 10:00:00' ) );
+		$debouncer = new ServiceChangeDebouncer( $scheduler, $settings, new ServiceRule( 'virtual_or_flag' ) );
+		Functions\expect( 'update_option' )->never();
+		$scheduler->ensureScheduled();
+		for ( $i = 1; $i <= 100; ++$i ) {
+			$debouncer->onPriceChanged( ProductSnapshot::fromArray( [ 'id' => $i, 'isVirtual' => false ] ), Transition::CHANGED );
+		}
+		$debouncer->onBulkChange();
+		$debouncer->onProductRemoved( 5 );
+		$scheduler->ensureScheduled();
+		$jobs = $this->generated();
+		self::assertCount( 1, $jobs );
+		self::assertSame( [], $jobs[0]['args'] );
+		self::assertSame( strtotime( '2026-10-02 04:00:00 UTC' ), $jobs[0]['timestamp'], '06:00 Zagreb next day' );
+	}
+
 	public function test_bulk_events_always_touch(): void {
 		Functions\when( 'update_option' )->justReturn( true );
 		$this->debouncer()->onBulkChange();

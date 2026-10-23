@@ -58,7 +58,7 @@ final class AdminActions {
 		switch ( $action ) {
 			case 'scwc_generate_now':
 				$error  = (string) ( ( $this->generate )() ?? '' );
-				$result = '' === $error ? 'generated' : 'error';
+				$result = '' === $error ? 'queued' : 'error';
 				break;
 			case 'scwc_run_sweep':
 				( $this->sweep )();
@@ -89,7 +89,7 @@ final class AdminActions {
 			return;
 		}
 		$messages = [
-			'generated'   => __( 'Cjenik je generiran.', 'sidrena-cijena-za-woocommerce' ),
+			'queued'      => __( 'Generiranje cjenika je zakazano. Posljednji dovršeni cjenik ostaje dostupan.', 'sidrena-cijena-za-woocommerce' ),
 			'swept'       => __( 'Provjera cijena je pokrenuta.', 'sidrena-cijena-za-woocommerce' ),
 			'rescheduled' => __( 'Zadaci su ponovno zakazani.', 'sidrena-cijena-za-woocommerce' ),
 		];

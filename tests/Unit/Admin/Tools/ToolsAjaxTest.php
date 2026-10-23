@@ -116,6 +116,7 @@ final class ToolsAjaxTest extends TestCase {
 	}
 
 	public function test_import_preview_then_apply_round_trip_through_transient(): void {
+		Functions\when( 'wp_generate_password' )->justReturn( 'AbC123xYz789' );
 		$this->product( [ 'id' => 1, 'sku' => 'A-1', 'regular_price' => '10' ] );
 		$csv     = "sku;cijena;datum\nA-1;12,50;2026-09-01\nZZZ;1;\n";
 		$preview = $this->handle( $this->ajax( [ 'tool' => 'import_preview', 'args' => [ 'csv' => $csv, 'type' => 'anchor', 'delimiter' => 'auto' ] ] ) );

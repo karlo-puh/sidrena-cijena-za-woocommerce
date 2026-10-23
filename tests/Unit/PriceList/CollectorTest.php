@@ -36,7 +36,7 @@ final class CollectorTest extends TestCase {
 	 */
 	private function collector( array $pages, int $perPage, ?callable $observer = null ): Collector {
 		return new Collector(
-			fn( int $page, int $per ) => $pages[ $page ] ?? [],
+			fn( int $after, int $per ) => array_slice( array_values( array_filter( array_merge( ...array_values( $pages ) ), fn( $id ) => $id > $after ) ), 0, $per ),
 			fn( int $id ) => \wc_get_product( $id ) ?: null,
 			new ProductAdapter( new BrandResolver(), new BarcodeResolver() ),
 			$this->factory(),
@@ -51,23 +51,23 @@ final class CollectorTest extends TestCase {
 		}
 		$this->product( [ 'id' => 5, 'name' => 'Usluga', 'regular_price' => '99', 'virtual' => true ] );
 		$calls = [];
-		$pager = function ( int $page, int $per ) use ( &$calls ) {
-			$calls[] = [ $page, $per ];
-			return [ 1 => [ 1, 2 ], 2 => [ 3, 4 ], 3 => [ 5 ] ][ $page ] ?? [];
+		$pager = function ( int $after, int $per ) use ( &$calls ) {
+			$calls[] = [ $after, $per ];
+			return array_slice( array_values( array_filter( [ 1, 2, 3, 4, 5 ], fn( $id ) => $id > $after ) ), 0, $per );
 		};
 		$collector = new Collector( $pager, fn( int $id ) => \wc_get_product( $id ) ?: null, new ProductAdapter( new BrandResolver(), new BarcodeResolver() ), $this->factory(), 2 );
 		$items     = iterator_to_array( $collector->items(), false );
 		self::assertCount( 5, $items );
 		self::assertSame( [ 'P1', 'P2', 'P3', 'P4' ], array_map( fn( $i ) => $i->name, array_slice( $items, 0, 4 ) ) );
 		self::assertInstanceOf( ServiceItem::class, $items[4] );
-		self::assertSame( [ [ 1, 2 ], [ 2, 2 ], [ 3, 2 ] ], $calls );
+		self::assertSame( [ [ 0, 2 ], [ 2, 2 ], [ 4, 2 ], [ 5, 2 ] ], $calls );
 	}
 
 	public function test_variable_products_are_expanded_into_variations_only(): void {
 		$this->product( [ 'id' => 11, 'type' => 'variation', 'parent_id' => 10, 'name' => 'Majica - S', 'regular_price' => '10' ] );
 		$this->product( [ 'id' => 12, 'type' => 'variation', 'parent_id' => 10, 'name' => 'Majica - M', 'regular_price' => '12', 'meta' => [ '_scwc_ref_anchor_price' => '13' ] ] );
 		$this->product( [ 'id' => 10, 'type' => 'variable', 'name' => 'Majica', 'children' => [ 11, 12, 999 ], 'meta' => [ '_scwc_unit' => 'kom' ] ] );
-		$items = iterator_to_array( $this->collector( [ 1 => [ 10 ] ], 50 )->items(), false );
+		$items = iterator_to_array( $this->collector( [ 1 => [ 10, 11, 12, 999 ] ], 50 )->items(), false );
 		self::assertCount( 2, $items );
 		self::assertContainsOnlyInstancesOf( Item::class, $items );
 		self::assertSame( [ 'Majica - S', 'Majica - M' ], array_map( fn( Item $i ) => $i->name, $items ) );
@@ -79,7 +79,7 @@ final class CollectorTest extends TestCase {
 		$this->product( [ 'id' => 1, 'regular_price' => '10', 'meta' => [ '_scwc_exclude_from_price_list' => 'yes' ] ] );
 		$this->product( [ 'id' => 2, 'regular_price' => '10', 'catalog_visibility' => 'hidden' ] );
 		$this->product( [ 'id' => 3, 'regular_price' => '10' ] );
-		$items = iterator_to_array( $this->collector( [ 1 => [ 1, 2, 404, 3 ] ], 50 )->items(), false );
+		$items = iterator_to_array( $this->collector( [ 1 => [ 1, 2, 3, 404 ] ], 50 )->items(), false );
 		self::assertCount( 2, $items, 'excluded flag and missing product skipped; hidden products are listed by default (still purchasable)' );
 	}
 
@@ -91,7 +91,7 @@ final class CollectorTest extends TestCase {
 		$obs  = function ( ProductSnapshot $s ) use ( &$seen ) {
 			$seen[] = $s->id;
 		};
-		iterator_to_array( $this->collector( [ 1 => [ 1, 10 ] ], 50, $obs )->items(), false );
+		iterator_to_array( $this->collector( [ 1 => [ 1, 10, 11 ] ], 50, $obs )->items(), false );
 		self::assertSame( [ 1, 11 ], $seen );
 	}
 
@@ -99,12 +99,27 @@ final class CollectorTest extends TestCase {
 		self::assertIsCallable( Collector::wcPager() );
 	}
 
-	public function test_pager_query_does_not_whitelist_product_types(): void {
-		$args = Collector::pagerArgs( 2, 50 );
-		self::assertArrayNotHasKey( 'type', $args, 'bundles, subscriptions etc. must be listed too' );
-		self::assertSame( 'publish', $args['status'] );
-		self::assertSame( 50, $args['limit'] );
-		self::assertSame( 2, $args['page'] );
-		self::assertSame( 'ids', $args['return'] );
+	public function test_variations_are_bounded_and_unpublished_parents_are_excluded(): void {
+		$this->product( [ 'id' => 10, 'type' => 'variable', 'status' => 'draft', 'children' => [ 11 ] ] );
+		$this->product( [ 'id' => 11, 'type' => 'variation', 'parent_id' => 10, 'regular_price' => '10' ] );
+		$this->product( [ 'id' => 20, 'type' => 'variable', 'children' => range( 21, 30 ) ] );
+		foreach ( range( 21, 30 ) as $id ) {
+			$this->product( [ 'id' => $id, 'type' => 'variation', 'parent_id' => 20, 'regular_price' => '10' ] );
+		}
+		$collector = $this->collector( [ 1 => array_merge( [ 10, 11, 20 ], range( 21, 30 ) ) ], 3 );
+		$first = $collector->batch( 0 );
+		self::assertSame( [], $first['items'] );
+		self::assertSame( 20, $first['cursor'] );
+		self::assertFalse( $first['done'] );
+		$next = $collector->batch( $first['cursor'] );
+		self::assertCount( 3, $next['items'], 'A parent with many variations must not defeat the batch limit.' );
+		self::assertSame( 23, $next['cursor'] );
+		self::assertCount( 10, iterator_to_array( $collector->items() ) );
+	}
+
+	public function test_custom_variation_type_also_requires_a_published_parent(): void {
+		$this->product( [ 'id' => 10, 'type' => 'variable', 'status' => 'draft' ] );
+		new \WC_Product_Variation( [ 'id' => 11, 'type' => 'subscription_variation', 'parent_id' => 10, 'regular_price' => '10' ] );
+		self::assertSame( [], $this->collector( [ 1 => [ 11 ] ], 10 )->batch( 0 )['items'] );
 	}
 }

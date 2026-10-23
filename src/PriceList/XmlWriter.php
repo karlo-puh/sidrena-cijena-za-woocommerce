@@ -44,35 +44,48 @@ class XmlWriter implements Writer {
 		$w->writeElement( 'Url', $outlet->url );
 		$w->endElement();
 
-		// Products and services land in separate sections, so services are buffered until products are done.
-		$products = 0;
-		$services = [];
-		$w->startElement( 'Proizvodi' );
-		foreach ( $items as $item ) {
-			if ( $item instanceof ServiceItem ) {
-				$services[] = $item;
-				continue;
+		// Replay rows from disk for the services section instead of buffering all services in RAM.
+		$temp = null;
+		try {
+			if ( ! $items instanceof ItemStream ) {
+				$temp = tempnam( dirname( $path ), 'services-' );
+				if ( false === $temp ) {
+					throw new RuntimeException( 'Unable to spool price-list services.' );
+				}
+				$stream = new ItemStream( $temp );
+				$stream->append( $items, 0 );
+				$items = $stream;
 			}
-			if ( ! $item instanceof Item ) {
-				continue;
+			$products = 0;
+			$services = 0;
+			$w->startElement( 'Proizvodi' );
+			foreach ( $items as $item ) {
+				if ( $item instanceof Item ) {
+					$this->product( $w, $item, $types );
+					++$products;
+				}
 			}
-			$this->product( $w, $item, $types );
-			++$products;
-			$w->flush();
+			$w->endElement();
+			$w->startElement( 'Usluge' );
+			foreach ( $items as $item ) {
+				if ( $item instanceof ServiceItem ) {
+					$this->service( $w, $item, $types );
+					++$services;
+				}
+			}
+			$w->endElement();
+			$w->endElement();
+			$w->endDocument();
+			$flushed = $w->flush();
+			if ( false === $flushed || ( is_int( $flushed ) && $flushed < 0 ) ) {
+				throw new RuntimeException( 'Unable to flush price-list XML.' );
+			}
+			return new WriteStats( $products, $services );
+		} finally {
+			if ( is_string( $temp ) ) {
+				unlink( $temp );
+			}
 		}
-		$w->endElement();
-
-		$w->startElement( 'Usluge' );
-		foreach ( $services as $service ) {
-			$this->service( $w, $service, $types );
-		}
-		$w->endElement();
-
-		$w->endElement();
-		$w->endDocument();
-		$w->flush();
-
-		return new WriteStats( $products, count( $services ) );
 	}
 
 	/**

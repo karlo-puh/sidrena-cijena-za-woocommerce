@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -14,7 +14,7 @@ Sidrena (dodatna) cijena uz svaku cijenu, najniža cijena u 30 dana prije sniže
 
 == Description ==
 
-Dodatak provodi obveze hrvatskih webshopova koje stupaju na snagu **1. listopada 2026.** (Odluke Vlade RH, NN 101/2026, na temelju Zakona o iznimnim mjerama kontrole cijena, NN 40/2025) te obvezu isticanja najniže cijene u 30 dana (Zakon o zaštiti potrošača, čl. 19):
+Dodatak provodi obveze hrvatskih webshopova koje stupaju na snagu **17. studenoga 2026.** (Odluke Vlade RH, NN 101/2026, izmjene NN 110/2026, na temelju Zakona o iznimnim mjerama kontrole cijena, NN 40/2025) te obvezu isticanja najniže cijene u 30 dana (Zakon o zaštiti potrošača, čl. 19):
 
 * **Sidrena (dodatna) cijena** – uz svaku aktualnu cijenu prikazuje se redovna cijena koja je vrijedila na referentni dan (zadano **10. 9. 2026.**; za FMCG kategorije koje ste već označavali može se zadržati **2. 5. 2025.** po kategoriji). Prikaz je jasan, vidljiv i čitljiv, s datumom, na popisu proizvoda, stranici proizvoda, varijacijama, košarici i blagajni (klasični predlošci) te putem podataka Store API-ja za blokovsku košaricu.
 * **Najniža cijena u 30 dana prije sniženja** – dodatak bilježi povijest cijena i za vrijeme svakog sniženja prikazuje najnižu cijenu u 30 dana prije početka sniženja te postotak popusta izračunat iz nje.
@@ -46,7 +46,7 @@ U blokovskoj košarici i blagajni (WooCommerce Blocks) sidrena cijena prikazuje 
 
 **Odluka o objavi cjenika (1213)**
 
-* t. II. – XML/CSV na vlastitoj stranici; cjenik robe generira se svaki dan (zadano 06:00 po vremenskoj zoni trgovine; ako je vrijeme postavljeno nakon 07:30 administracija upozorava); cjenik usluga osvježava se pri svakoj promjeni (zadano i pri promjeni cijene robe), a promjena prije 08:00 objavljuje se odmah, bez odgode; svaka objavljena verzija čuva se i javno je dostupna najmanje 30 dana (zadano 35).
+* t. II. – XML/CSV na vlastitoj stranici; cjenik robe ažurira se jednom dnevno do 08:00 za tekući radni dan (zadano pokretanje u 06:00). Za katalog robe odaberite „Regeneriraj pri promjeni cijene → Nikad (samo dnevno)”; promjene cijena tijekom dana ne zahtijevaju novi izvoz. Usluge imaju zasebno pravilo ažuriranja pri promjeni. Svaka objavljena verzija čuva se i javno je dostupna najmanje 30 dana (zadano 35). Zakazivanje samo po sebi nije potvrda dovršene objave.
 * t. III./IV. – sva propisana polja za proizvode (naziv, šifra, marka, jedinica mjere, cijena za jedinicu mjere, maloprodajna cijena + posebni oblik prodaje s nazivom, sidrena cijena, barkod, dostupno/nedostupno) i usluge (naziv usluge, maloprodajna cijena + posebni oblik prodaje, sidrena cijena).
 * t. VI. – naziv datoteke sadrži oblik, adresu i oznaku prodajnog objekta, broj pohrane te datum i vrijeme objave; svaki prodajni objekt (webshop i svaka poslovnica) ima vlastitu datoteku i arhivu jedinstvene strukture; u cjenik ulaze svi objavljeni proizvodi s cijenom, uključujući skrivene (dostupni izravnim linkom) i proizvode drugih dodataka (paketi, pretplate).
 * t. VII. – datoteke su dostupne bez prijave i zaštite od robota, s CORS zaglavljima, `no-cache` na `latest.*`, `index.json` za otkrivanje te izravnim adresama datoteka koje ne ovise o postavkama trajnih veza.
@@ -64,9 +64,9 @@ U blokovskoj košarici i blagajni (WooCommerce Blocks) sidrena cijena prikazuje 
 2. Aktivirajte dodatak. WooCommerce 9.0+ i PHP 8.1+ su obavezni.
 3. **WooCommerce → Sidrena cijena → Prodajni objekti**: unesite adresu, oznaku prodajnog objekta i broj pohrane webshopa (ulaze u naziv datoteke cjenika) te dodajte fizičke poslovnice ako ih imate – svaka dobiva vlastitu datoteku i adresu.
 4. **Referentne cijene**: provjerite datum (10. 9. 2026.) i po potrebi dodajte FMCG kategorije s datumom 2. 5. 2025.
-5. **WooCommerce → Sidrena cijena – Alati**: snimite trenutne redovne cijene kao sidrene cijene (ili uvezite CSV s cijenama koje su vrijedile 10. 9. 2026.).
-6. **Cjenik**: kliknite „Generiraj sada” i provjerite `https://vasa-trgovina.hr/cjenik/`.
-7. Preporuka: postavite pravi sistemski cron (`DISABLE_WP_CRON` + `wp cron event run --due-now` ili `wp action-scheduler run`) kako bi generiranje u 06:00 bilo pouzdano. Alternativa: vanjski cron koji poziva `https://vasa-trgovina.hr/cjenik/?scwc_run=1&key=VAŠ_KLJUČ` (ključ je u postavkama).
+5. **WooCommerce → Sidrena cijena – Alati**: uvezite provjerene povijesne cijene s pripadajućim datumom. Današnje cijene nemojte označiti povijesnim datumom bez dokaza.
+6. **Cjenik**: kliknite „Generiraj sada”, pričekajte dovršetak zakazanih radnji i provjerite `https://vasa-trgovina.hr/cjenik/`.
+7. Preporuka: postavite pravi sistemski cron (`DISABLE_WP_CRON` + `wp cron event run --due-now` ili `wp action-scheduler run`) kako bi generiranje u 06:00 bilo pouzdano. Dodatno: vanjski cron koji zakazuje izvoz pozivom na `https://vasa-trgovina.hr/cjenik/?scwc_run=1&key=VAŠ_KLJUČ` (ključ je u postavkama). HTTP poziv vraća 202; Action Scheduler ili WP-Cron i dalje mora izvršiti zakazane radnje.
 8. Ako koristite cache dodatak ili CDN: URL-ovi `/cjenik/` i `/cjenik/latest.*` ne smiju se keširati (dodatak šalje `no-cache` zaglavlja i `DONOTCACHEPAGE`).
 
 == Frequently Asked Questions ==
@@ -85,7 +85,7 @@ Službeno „dodatna maloprodajna cijena” – redovna cijena (bez posebnih obl
 
 = Proizvod je uveden nakon 10. 9. 2026. =
 
-Označite „Nema referentne cijene” na proizvodu (alat za snimanje to radi automatski za proizvode kreirane nakon referentnog datuma). Prikazuje se samo aktualna cijena.
+Za novi proizvod ili varijaciju stvorenu dok je fork aktivan dodatak pri prvoj objavi sprema prvu redovnu cijenu i datum. Postojeće reference i oznake „nema referentne cijene” ne mijenja. Ako podatak nedostaje, unesite provjerenu početnu cijenu i stvarni datum; današnja cijena nije dokaz povijesne cijene.
 
 = Moram li čuvati stare cjenike? =
 
@@ -96,6 +96,14 @@ Da, najmanje 30 dana. Dodatak čuva i javno poslužuje verzije prema postavci za
 Iz najniže cijene u 30 dana prije početka sniženja (a ne iz redovne cijene), zaokruženo na niže.
 
 == Changelog ==
+
+= 1.3.0 =
+* Veliki cjenici obrađuju se u manjim radnjama kroz postojeći Action Scheduler, s napretkom i redcima na disku.
+* Prekinuti poslovi nastavljaju od potvrđenog koraka; pogreške se prijavljuju, a posljednji dovršeni cjenik ostaje dostupan.
+* CSV/XML objavljuju se zajedno nakon dovršetka svih datoteka; datotečna brava sprečava istodobno pisanje.
+* Ispravljeni su tokeni CSV uvoza s velikim slovima i otkazivanje starih zadataka s argumentima.
+* Ručno i HTTP pokretanje potvrđuje zakazivanje (HTTP 202), a ne dovršetak. WP-CLI izvoz ostaje sinkron.
+* Postojeće postavke i povijesne cijene ostaju sačuvane. Za dnevni cjenik robe odaberite „Nikad (samo dnevno)” i zatim „Ponovno zakaži zadatke”.
 
 = 1.2.2 =
 * Automatski sprema prvu redovnu cijenu i datum za nove proizvode i varijacije pri objavi.

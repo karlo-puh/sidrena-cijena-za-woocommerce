@@ -1,36 +1,18 @@
 #!/usr/bin/env bash
-# Builds dist/sidrena-cijena-za-woocommerce.zip with production vendor/ (no dev deps).
+# Builds the installable ZIP from an explicit list of runtime files.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SLUG=sidrena-cijena-za-woocommerce
 VERSION=$(grep -m1 'Version:' "$SLUG.php" | sed 's/.*Version: *//')
 BUILD=build/$SLUG
 rm -rf build dist && mkdir -p "$BUILD" dist
-rsync -a --exclude-from=- ./ "$BUILD/" <<'EXCLUDE'
-.git
-.gitignore
-.idea
-.DS_Store
-.phpunit.result.cache
-build
-dist
-docs
-tests
-bin
-node_modules
-vendor
-composer.lock
-phpunit.xml.dist
-phpstan.neon.dist
-phpstan-bootstrap.php
-phpcs.xml.dist
-EXCLUDE
-# No runtime Composer dependencies (built-in autoloader): ship without vendor/ or composer files.
-rm -f "$BUILD/composer.json" "$BUILD/composer.lock"
+# No runtime Composer dependencies. An allowlist also keeps local caches and CI out.
+rsync -a --exclude='.DS_Store' --exclude='._*' \
+  src templates assets languages "$SLUG.php" uninstall.php readme.txt README.md LICENSE "$BUILD/"
 if command -v msgfmt >/dev/null; then
   for po in "$BUILD"/languages/*.po; do [ -f "$po" ] && msgfmt -o "${po%.po}.mo" "$po"; done
 fi
 # Owner's manual (PDF) ships inside the plugin folder.
-for pdf in docs/manual/*.pdf; do [ -f "$pdf" ] && cp "$pdf" "$BUILD/prirucnik.pdf"; done
+cp docs/manual/Sidrena-cijena-za-WooCommerce-prirucnik.pdf "$BUILD/prirucnik.pdf"
 ( cd build && zip -qr "../dist/$SLUG-$VERSION.zip" "$SLUG" )
 echo "Built dist/$SLUG-$VERSION.zip"

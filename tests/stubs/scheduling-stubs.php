@@ -22,7 +22,7 @@ if ( ! function_exists( 'as_enqueue_async_action' ) ) {
 if ( ! function_exists( 'as_next_scheduled_action' ) ) {
 	function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 		foreach ( $GLOBALS['scwc_test_schedule']['single'] ?? [] as $s ) {
-			if ( $s['hook'] === $hook && ( null === $args || $s['args'] === $args ) ) {
+			if ( $s['hook'] === $hook && $s['group'] === $group && ( null === $args || $s['args'] === $args ) ) {
 				return $s['timestamp'];
 			}
 		}
@@ -35,7 +35,13 @@ if ( ! function_exists( 'as_has_scheduled_action' ) ) {
 if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 	function as_unschedule_all_actions( $hook, $args = [], $group = '' ) {
 		$GLOBALS['scwc_test_schedule']['unscheduled'][] = $hook;
-		$GLOBALS['scwc_test_schedule']['single'] = array_values( array_filter( $GLOBALS['scwc_test_schedule']['single'] ?? [], fn( $s ) => $s['hook'] !== $hook ) );
+		foreach ( [ 'single', 'async' ] as $queue ) {
+			$GLOBALS['scwc_test_schedule'][ $queue ] = array_values( array_filter( $GLOBALS['scwc_test_schedule'][ $queue ] ?? [], static function ( $s ) use ( $hook, $args, $group ) {
+				if ( ( '' !== $hook && $s['hook'] !== $hook ) || ( '' !== $group && $s['group'] !== $group ) ) { return true; }
+				// With both hook and group set, [] matches only empty args; null matches any args.
+				return is_array( $args ) && ! ( [] === $args && ( '' === $hook || '' === $group ) ) && $s['args'] !== $args;
+			} ) );
+		}
 	}
 }
 if ( ! function_exists( 'wp_schedule_single_event' ) ) {

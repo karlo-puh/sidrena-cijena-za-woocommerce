@@ -270,7 +270,7 @@ final class Fields {
 					'path'        => 'price_list.enabled',
 					'type'        => 'checkbox',
 					'label'       => __( 'Objavi strojno čitljiv cjenik', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Obveza za sve trgovce s web stranicom od 1. 10. 2026.', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Obveza za sve trgovce s web stranicom od 17. 11. 2026. (NN 110/2026).', 'sidrena-cijena-za-woocommerce' ),
 				],
 				[
 					'path'    => 'price_list.formats',
@@ -298,7 +298,7 @@ final class Fields {
 					'path'        => 'price_list.regenerate_on_change',
 					'type'        => 'select',
 					'label'       => __( 'Regeneriraj pri promjeni cijene', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Cjenik usluga mora se objaviti pri svakoj promjeni cijene. „Svi proizvodi” (zadano) osvježava cjenik i pri promjeni cijene robe, što omogućuje dohvat cijena u gotovo stvarnom vremenu (t. VII.).', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Za trgovinu samo robom odaberite „Nikad (samo dnevno)”: promjene cijena tijekom dana ne zahtijevaju novi cjenik. Dnevno generiranje i bilježenje povijesti ostaju uključeni. Dodatno osvježavanje je opcionalno; usluge imaju zasebno pravilo ažuriranja.', 'sidrena-cijena-za-woocommerce' ),
 					'options'     => [
 						'services' => __( 'Samo usluge', 'sidrena-cijena-za-woocommerce' ),
 						'all'      => __( 'Svi proizvodi', 'sidrena-cijena-za-woocommerce' ),

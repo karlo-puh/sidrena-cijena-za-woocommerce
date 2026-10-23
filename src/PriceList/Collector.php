@@ -24,7 +24,7 @@ class Collector {
 	private $observer;
 
 	/**
-	 * @param callable(int,int):int[]                 $pager    Returns parent-level product IDs for (page, perPage).
+	 * @param callable(int,int):int[]                 $pager    Returns published product/variation IDs after a cursor, up to perPage.
 	 * @param callable(int):?WC_Product              $loader   Product loader.
 	 * @param callable(ProductSnapshot):void|null    $observer Called for every non-container snapshot seen.
 	 */
@@ -33,7 +33,7 @@ class Collector {
 		callable $loader,
 		private readonly ProductAdapter $adapter,
 		private readonly ItemFactory $factory,
-		private readonly int $perPage = 200,
+		private readonly int $perPage = 100,
 		?callable $observer = null,
 	) {
 		$this->pager    = $pager;
@@ -42,46 +42,49 @@ class Collector {
 	}
 
 	/**
-	 * @return Generator<int,Item|ServiceItem>
+	 * Collect at most one small batch. The cursor counts scanned IDs, including excluded rows.
+	 * Variations are paged independently, so a large variable product cannot expand a batch.
+	 *
+	 * @return array{items:array<Item|ServiceItem>,cursor:int,done:bool}
 	 */
-	public function items(): Generator {
-		$page = 1;
-		do {
-			$ids   = ( $this->pager )( $page, $this->perPage );
-			$count = count( $ids );
-			foreach ( $ids as $id ) {
-				$product = ( $this->loader )( (int) $id );
-				if ( ! $product instanceof WC_Product ) {
-					continue;
-				}
-				if ( 'variable' === $product->get_type() ) {
-					yield from $this->variations( $product );
-					continue;
-				}
-				$item = $this->make( $product, null, null );
-				if ( null !== $item ) {
-					yield $item;
+	public function batch( int $after ): array {
+		$ids     = ( $this->pager )( $after, max( 1, $this->perPage ) );
+		$items   = [];
+		$started = microtime( true );
+		foreach ( $ids as $id ) {
+			$product = ( $this->loader )( (int) $id );
+			$after   = (int) $id;
+			if ( $product instanceof WC_Product ) {
+				$parent = $product->get_parent_id() ? ( $this->loader )( $product->get_parent_id() ) : null;
+				if ( ! $product instanceof \WC_Product_Variation || ( $parent instanceof WC_Product && 'publish' === $parent->get_status() ) ) {
+					$item = $this->make( $product, $parent, $parent ? $this->adapter->fromProduct( $parent ) : null );
+					if ( null !== $item ) {
+						$items[] = $item;
+					}
 				}
 			}
-			++$page;
-		} while ( $this->perPage > 0 && $count >= $this->perPage );
-	}
-
-	/**
-	 * @return Generator<int,Item|ServiceItem>
-	 */
-	private function variations( WC_Product $parent ): Generator {
-		$parentSnapshot = $this->adapter->fromProduct( $parent );
-		foreach ( $parent->get_children() as $childId ) {
-			$child = ( $this->loader )( (int) $childId );
-			if ( ! $child instanceof WC_Product ) {
-				continue;
-			}
-			$item = $this->make( $child, $parent, $parentSnapshot );
-			if ( null !== $item ) {
-				yield $item;
+			// Yield to the queue between products; never interrupt a price-history write.
+			if ( microtime( true ) - $started >= 10 ) {
+				break;
 			}
 		}
+		return [
+			'items'  => $items,
+			'cursor' => $after,
+			'done'   => [] === $ids,
+		];
+	}
+
+	/** @return Generator<int,Item|ServiceItem> */
+	public function items(): Generator {
+		$after = 0;
+		do {
+			$batch = $this->batch( $after );
+			foreach ( $batch['items'] as $item ) {
+				yield $item;
+			}
+			$after = $batch['cursor'];
+		} while ( ! $batch['done'] );
 	}
 
 	/**
@@ -99,35 +102,40 @@ class Collector {
 	}
 
 	/**
-	 * Default pager over published parent-level products.
+	 * Keyset paging through WP_Query; deleting an earlier product cannot skip a row.
+	 * Product values still come from WooCommerce CRUD, including third-party product types.
 	 *
-	 * @return callable(int,int):int[]
-	 */
-	/**
-	 * wc_get_products() arguments for one page of top-level products. No product-type whitelist:
-	 * third-party types (bundles, subscriptions, …) are the trader's products too; containers are
-	 * skipped later by ProductSnapshot::isContainer().
-	 *
-	 * @return array<string,mixed>
-	 */
-	public static function pagerArgs( int $page, int $perPage ): array {
-		return [
-			'status'  => 'publish',
-			'limit'   => $perPage,
-			'page'    => $page,
-			'orderby' => 'ID',
-			'order'   => 'ASC',
-			'return'  => 'ids',
-		];
-	}
-
-	/**
 	 * @return callable(int,int):int[]
 	 */
 	public static function wcPager(): callable {
-		return static function ( int $page, int $perPage ): array {
-			$ids = wc_get_products( self::pagerArgs( $page, $perPage ) );
-			return array_map( 'intval', is_array( $ids ) ? $ids : [] );
+		return static function ( int $after, int $limit ): array {
+			global $wpdb;
+			$query = new \WP_Query();
+			$where = static function ( string $sql, \WP_Query $current ) use ( $query, $after, $wpdb ): string {
+				return $current === $query ? $sql . $wpdb->prepare( " AND {$wpdb->posts}.ID > %d", $after ) : $sql;
+			};
+			// Scope the cursor to this query, while retaining native language and visibility filters.
+			add_filter( 'posts_where', $where, 10, 2 );
+			try {
+				$ids = $query->query(
+					[
+						'post_type'        => [ 'product', 'product_variation' ],
+						'post_status'      => 'publish',
+						'posts_per_page'   => max( 1, $limit ),
+						'orderby'          => 'ID',
+						'order'            => 'ASC',
+						'fields'           => 'ids',
+						'no_found_rows'    => true,
+						'suppress_filters' => false,
+					]
+				);
+			} finally {
+				remove_filter( 'posts_where', $where, 10 );
+			}
+			if ( '' !== $wpdb->last_error ) {
+				throw new \RuntimeException( 'Unable to read price-list products.' );
+			}
+			return array_map( 'intval', $ids );
 		};
 	}
 }

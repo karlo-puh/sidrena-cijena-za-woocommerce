@@ -28,7 +28,7 @@ final class JobRunnerTest extends TestCase {
 	private function runner( bool $sweepHasMore = false ): JobRunner {
 		return new JobRunner(
 			$this->scheduler,
-			function ( string $reason ) { $this->calls[] = "generate:{$reason}"; },
+			function ( string $reason ) { $this->calls[] = "generate:{$reason}"; return false; },
 			function ( int $page ) use ( $sweepHasMore ) { $this->calls[] = "sweep:{$page}"; return new SweepResult( 10, 1, $sweepHasMore && $page < 3 ); },
 			function () { $this->calls[] = 'prune'; },
 			function ( string $type ) { $this->calls[] = "snapshot:{$type}"; },
@@ -48,6 +48,45 @@ final class JobRunnerTest extends TestCase {
 		$this->runner()->generate( 'scheduled' );
 		self::assertSame( [ 'generate:scheduled' ], $this->calls );
 		self::assertContains( Scheduler::HOOK_GENERATE, array_column( $GLOBALS['scwc_test_schedule']['single'], 'hook' ) );
+	}
+
+	public function test_continuation_is_scheduled_before_work_and_chains_until_complete(): void {
+		$more = true;
+		$runner = new JobRunner( $this->scheduler, function ( string $reason ) use ( &$more ) {
+			$next = $this->scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] );
+			self::assertNotNull( $next, 'A killed worker already has a recovery action queued.' );
+			self::assertSame( '__resume', $reason );
+			return $more;
+		}, fn() => null, fn() => null, fn() => null );
+		$runner->generateBatch();
+		self::assertNotNull( $this->scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ) );
+		$more = false;
+		$runner->generateBatch();
+		self::assertNull( $this->scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ) );
+	}
+
+	public function test_generation_errors_reach_action_scheduler_instead_of_being_swallowed(): void {
+		$runner = new JobRunner( $this->scheduler, static function () { throw new \RuntimeException( 'Disk full' ); }, fn() => null, fn() => null, fn() => null );
+		try {
+			$runner->generate();
+			self::fail( 'Scheduler must see the failure.' );
+		} catch ( \RuntimeException $e ) {
+			self::assertSame( 'Disk full', $e->getMessage() );
+		}
+		self::assertNull( $this->scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ), 'Do not infinitely retry a known error.' );
+		self::assertNotNull( $this->scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE, [] ), 'The next daily run is still scheduled.' );
+	}
+
+	public function test_wp_cron_fallback_chains_and_clears_its_continuation(): void {
+		$scheduler = new Scheduler( new \SidrenaCijena\Scheduling\WpCronBackend(), new Settings( Defaults::all() ), new FixedClock( '2026-10-01 03:00:00' ) );
+		$more = true;
+		$runner = new JobRunner( $scheduler, function () use ( &$more ) { return $more; }, fn() => null, fn() => null, fn() => null );
+		$runner->generate();
+		self::assertNotNull( $scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ) );
+		$more = false;
+		$runner->generateBatch();
+		self::assertNull( $scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ) );
+		self::assertNotNull( $scheduler->backend()->nextScheduled( Scheduler::HOOK_GENERATE, [] ) );
 	}
 
 	public function test_sweep_chains_pages_until_done_then_reschedules(): void {

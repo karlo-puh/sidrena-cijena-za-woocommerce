@@ -109,6 +109,24 @@ final class ManifestTest extends TestCase {
 		self::assertSame( 'a.xml', $m->latest( 'xml' )['name'] );
 	}
 
+	public function test_failed_atomic_replace_preserves_the_previous_manifest(): void {
+		$manifest = new Manifest( $this->storage );
+		$old = $this->entry( 'old.xml', 'xml', '2026-10-01 04:00:12' );
+		$manifest->add( $old );
+		$before = file_get_contents( $this->storage->path( Manifest::FILENAME ) );
+		$storage = \Mockery::mock( Storage::class, [ $this->dir, 'https://example.hr' ] )->makePartial();
+		$storage->shouldReceive( 'writeAtomic' )->once()->andThrow( new \RuntimeException( 'Disk full' ) );
+		$failing = new Manifest( $storage );
+		try {
+			$failing->addAll( [ $this->entry( 'new.xml', 'xml', '2026-10-02 04:00:12' ), $this->entry( 'new.csv', 'csv', '2026-10-02 04:00:12' ) ] );
+			self::fail( 'Write errors must propagate.' );
+		} catch ( \RuntimeException $e ) {
+			self::assertSame( 'Disk full', $e->getMessage() );
+		}
+		self::assertSame( $before, file_get_contents( $this->storage->path( Manifest::FILENAME ) ) );
+		self::assertSame( [ $old ], $failing->entries(), 'Do not expose uncommitted entries through the in-memory cache.' );
+	}
+
 	public function test_load_is_lazy_and_reload_picks_up_disk_changes(): void {
 		$m = new Manifest( $this->storage );
 		$m->add( $this->entry( 'a.xml', 'xml', '2026-10-01 04:00:12' ) );

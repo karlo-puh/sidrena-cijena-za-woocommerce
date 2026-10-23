@@ -52,12 +52,24 @@ class Manifest {
 	 * @param array<string,mixed> $entry Entry with at least name/format/generated_at_utc.
 	 */
 	public function add( array $entry ): void {
+		$this->addAll( [ $entry ] );
+	}
+
+	/** @param array<int,array<string,mixed>> $newEntries Completed files from one generation. */
+	public function addAll( array $newEntries ): void {
+		$this->load();
 		$entries = $this->entries();
-		$name    = (string) ( $entry['name'] ?? '' );
-		$entries = array_values( array_filter( $entries, static fn( array $e ) => ( $e['name'] ?? '' ) !== $name ) );
-		array_unshift( $entries, $entry );
+		foreach ( $newEntries as $entry ) {
+			$entries = array_values( array_filter( $entries, static fn( array $e ) => $e['name'] !== $entry['name'] ) );
+			array_unshift( $entries, $entry );
+		}
 		$this->entries = $entries;
-		$this->save();
+		try {
+			$this->save();
+		} catch ( \Throwable $e ) {
+			$this->load();
+			throw $e;
+		}
 	}
 
 	/**
@@ -143,7 +155,10 @@ class Manifest {
 
 	public function save(): void {
 		$json = wp_json_encode( [ 'generated' => array_values( $this->entries() ) ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-		file_put_contents( $this->path(), false === $json ? '{"generated":[]}' : $json, LOCK_EX );
+		if ( false === $json ) {
+			throw new \RuntimeException( 'Unable to encode price-list manifest.' );
+		}
+		$this->storage->writeAtomic( $this->path(), $json );
 	}
 
 	private function path(): string {

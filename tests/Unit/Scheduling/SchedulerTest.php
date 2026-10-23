@@ -113,6 +113,17 @@ final class SchedulerTest extends TestCase {
 		self::assertCount( 3, $GLOBALS['scwc_test_schedule']['single'] );
 	}
 
+	public function test_reschedule_preserves_an_in_progress_export_but_disabling_cancels_it(): void {
+		$s = $this->scheduler( '2026-10-01 03:00:00' );
+		$s->continueGeneration( 60 );
+		$next = $s->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] );
+		$s->reschedule();
+		self::assertSame( $next, $s->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ) );
+		$disabled = $this->scheduler( '2026-10-01 03:00:00', ( new Settings( Defaults::all() ) )->with( 'price_list.enabled', false ) );
+		$disabled->reschedule();
+		self::assertNull( $disabled->backend()->nextScheduled( Scheduler::HOOK_GENERATE_BATCH, [] ) );
+	}
+
 	public function test_status_reports_next_runs(): void {
 		$s = $this->scheduler( '2026-10-01 03:00:00' );
 		$s->ensureScheduled();

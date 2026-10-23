@@ -31,33 +31,38 @@ class CsvWriter implements Writer {
 		if ( false === $fh ) {
 			throw new RuntimeException( esc_html( sprintf( /* translators: %s: file path */ __( 'Nije moguće pisati u datoteku %s.', 'sidrena-cijena-za-woocommerce' ), $path ) ) );
 		}
-		if ( $this->bom ) {
-			fwrite( $fh, self::BOM );
-		}
-
-		/** @var string[] $header */
-		$header = apply_filters( 'scwc_price_list_csv_header', $this->header( $types ) );
-		$this->line( $fh, $header );
-
-		$products = 0;
-		$services = 0;
-		foreach ( $items as $item ) {
-			if ( $item instanceof Item ) {
-				$row = $this->productRow( $item, $types );
-				++$products;
-			} elseif ( $item instanceof ServiceItem ) {
-				$row = $this->serviceRow( $item, $types );
-				++$services;
-			} else {
-				continue;
+		try {
+			if ( $this->bom && strlen( self::BOM ) !== fwrite( $fh, self::BOM ) ) {
+				throw new RuntimeException( 'Unable to write price-list CSV.' );
 			}
-			/** @var array<int,string> $row */
-			$row = apply_filters( 'scwc_price_list_csv_row', $row, $item );
-			$this->line( $fh, $row );
-		}
-		fclose( $fh );
 
-		return new WriteStats( $products, $services );
+			/** @var string[] $header */
+			$header = apply_filters( 'scwc_price_list_csv_header', $this->header( $types ) );
+			$this->line( $fh, $header );
+
+			$products = 0;
+			$services = 0;
+			foreach ( $items as $item ) {
+				if ( $item instanceof Item ) {
+					$row = $this->productRow( $item, $types );
+					++$products;
+				} elseif ( $item instanceof ServiceItem ) {
+					$row = $this->serviceRow( $item, $types );
+					++$services;
+				} else {
+					continue;
+				}
+				/** @var array<int,string> $row */
+				$row = apply_filters( 'scwc_price_list_csv_row', $row, $item );
+				$this->line( $fh, $row );
+			}
+			if ( ! fflush( $fh ) ) {
+				throw new RuntimeException( 'Unable to flush price-list CSV.' );
+			}
+			return new WriteStats( $products, $services );
+		} finally {
+			fclose( $fh );
+		}
 	}
 
 	/**
@@ -130,7 +135,9 @@ class CsvWriter implements Writer {
 	 * @param string[] $fields Row.
 	 */
 	private function line( $fh, array $fields ): void {
-		fputcsv( $fh, array_map( 'strval', $fields ), $this->delimiter, '"', '', "\n" );
+		if ( false === fputcsv( $fh, array_map( 'strval', $fields ), $this->delimiter, '"', '', "\n" ) ) {
+			throw new RuntimeException( 'Unable to write price-list CSV row.' );
+		}
 	}
 
 	private function money( ?float $amount ): string {

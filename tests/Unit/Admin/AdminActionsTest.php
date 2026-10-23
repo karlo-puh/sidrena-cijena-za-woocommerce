@@ -33,7 +33,7 @@ final class AdminActionsTest extends TestCase {
 		$GLOBALS['scwc_test_action'] = 'scwc_generate_now';
 		$this->actions()->handle( 'scwc_generate_now' );
 		self::assertSame( [ 'generate' ], $this->calls );
-		self::assertStringContainsString( 'scwc_result=generated', $GLOBALS['scwc_test_redirect'] );
+		self::assertStringContainsString( 'scwc_result=queued', $GLOBALS['scwc_test_redirect'] );
 	}
 
 	public function test_generation_error_is_carried_in_redirect(): void {

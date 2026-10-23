@@ -26,7 +26,7 @@ final class Endpoint {
 	private $runGenerator;
 
 	/**
-	 * @param callable(string):bool $runGenerator Runs a generation for a reason; returns success.
+	 * @param callable(string):bool $runGenerator Queues generation for a reason; returns whether it was accepted.
 	 */
 	public function __construct(
 		private readonly Settings $settings,
@@ -240,7 +240,16 @@ final class Endpoint {
 			return new Response( 403, null, '{"ok":false,"error":"forbidden"}' );
 		}
 		$ok = (bool) ( $this->runGenerator )( 'external' );
-		return new Response( $ok ? 200 : 500, null, (string) wp_json_encode( [ 'ok' => $ok ] ) );
+		return new Response(
+			$ok ? 202 : 500,
+			null,
+			(string) wp_json_encode(
+				[
+					'ok'     => $ok,
+					'queued' => $ok,
+				]
+			)
+		);
 	}
 
 	private function notFound(): Response {

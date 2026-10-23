@@ -7,6 +7,8 @@ namespace SidrenaCijena\Tests\Support;
  * Records queries; returns scripted results. prepare() interpolates like wpdb (quoted strings).
  */
 final class FakeWpdb {
+	public string $posts = 'wp_posts';
+	public string $postmeta = 'wp_postmeta';
 	public string $prefix = 'wp_';
 	public int $insert_id = 0;
 	/** @var array<int,string> */

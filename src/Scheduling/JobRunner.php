@@ -14,7 +14,7 @@ use SidrenaCijena\Settings\Settings;
 
 final class JobRunner {
 
-	/** @var callable(string):void */
+	/** @var callable(string):bool */
 	private $generate;
 	/** @var callable(int):SweepResult */
 	private $sweep;
@@ -24,7 +24,7 @@ final class JobRunner {
 	private $snapshot;
 
 	/**
-	 * @param callable(string):void     $generate Runs price-list generation for a reason.
+	 * @param callable(string):bool     $generate Runs one batch; true requests another batch.
 	 * @param callable(int):SweepResult $sweep    Runs one sweep page.
 	 * @param callable():void           $prune    Prunes history.
 	 * @param callable(string):void     $snapshot Runs an auto-snapshot for a reference type key.
@@ -44,6 +44,7 @@ final class JobRunner {
 
 	public function register(): void {
 		add_action( Scheduler::HOOK_GENERATE, [ $this, 'generate' ] );
+		add_action( Scheduler::HOOK_GENERATE_BATCH, [ $this, 'generateBatch' ] );
 		add_action( Scheduler::HOOK_SWEEP, [ $this, 'sweep' ] );
 		add_action( Scheduler::HOOK_SWEEP_PAGE, [ $this, 'sweepPage' ] );
 		add_action( Scheduler::HOOK_PRUNE, [ $this, 'prune' ] );
@@ -55,11 +56,23 @@ final class JobRunner {
 	 */
 	public function generate( $reason = 'scheduled' ): void {
 		$reason = is_array( $reason ) ? (string) ( $reason['reason'] ?? 'scheduled' ) : (string) ( $reason ?: 'scheduled' );
+		$this->scheduler->continueGeneration( 300 );
 		try {
-			( $this->generate )( $reason );
+			if ( ( $this->generate )( $reason ) ) {
+				$this->scheduler->continueGeneration( 0 );
+			} else {
+				$this->scheduler->finishGeneration();
+			}
+		} catch ( \Throwable $e ) {
+			$this->scheduler->finishGeneration();
+			throw $e; // Action Scheduler must record the failure, not a false success.
 		} finally {
 			$this->scheduler->ensureScheduled();
 		}
+	}
+
+	public function generateBatch(): void {
+		$this->generate( '__resume' );
 	}
 
 	public function sweep(): void {

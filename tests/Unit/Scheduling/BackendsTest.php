@@ -30,6 +30,21 @@ final class BackendsTest extends TestCase {
 		self::assertSame( 'action_scheduler', $b->name() );
 	}
 
+	public function test_cancel_export_jobs_includes_reason_args_and_preserves_other_work(): void {
+		$b = new ActionSchedulerBackend();
+		$b->scheduleSingle( 100, 'export', [], false );
+		$b->scheduleSingle( 200, 'export', [ 'reason' => 'change' ], false );
+		$b->enqueueAsync( 'export', [ 'reason' => 'manual' ] );
+		$b->scheduleSingle( 300, 'other-hook', [], false );
+		as_schedule_single_action( 400, 'export', [ 'reason' => 'change' ], 'other-plugin' );
+		$b->unscheduleAll( 'export' );
+		self::assertNull( $b->nextScheduled( 'export', [] ) );
+		self::assertNull( $b->nextScheduled( 'export', [ 'reason' => 'change' ] ) );
+		self::assertSame( [], $GLOBALS['scwc_test_schedule']['async'] );
+		self::assertSame( 300, $b->nextScheduled( 'other-hook', [] ) );
+		self::assertSame( 400, as_next_scheduled_action( 'export', [ 'reason' => 'change' ], 'other-plugin' ) );
+	}
+
 	public function test_wp_cron_backend_emulates_unique_and_async(): void {
 		$b = new WpCronBackend();
 		$b->scheduleSingle( 500, 'h', [ 'x' => 1 ], true );

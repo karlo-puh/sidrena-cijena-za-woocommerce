@@ -15,13 +15,14 @@ use SidrenaCijena\Support\Clock;
 
 class Scheduler {
 
-	public const HOOK_GENERATE      = 'scwc_generate_price_list';
-	public const HOOK_SWEEP         = 'scwc_daily_sweep';
-	public const HOOK_SWEEP_PAGE    = 'scwc_sweep_page';
-	public const HOOK_PRUNE         = 'scwc_prune';
-	public const HOOK_AUTO_SNAPSHOT = 'scwc_auto_snapshot';
-	public const HOOKS              = [ self::HOOK_GENERATE, self::HOOK_SWEEP, self::HOOK_SWEEP_PAGE, self::HOOK_PRUNE, self::HOOK_AUTO_SNAPSHOT ];
-	public const WATCHDOG_TRANSIENT = 'scwc_schedule_check';
+	public const HOOK_GENERATE       = 'scwc_generate_price_list';
+	public const HOOK_GENERATE_BATCH = 'scwc_generate_price_list_batch';
+	public const HOOK_SWEEP          = 'scwc_daily_sweep';
+	public const HOOK_SWEEP_PAGE     = 'scwc_sweep_page';
+	public const HOOK_PRUNE          = 'scwc_prune';
+	public const HOOK_AUTO_SNAPSHOT  = 'scwc_auto_snapshot';
+	public const HOOKS               = [ self::HOOK_GENERATE, self::HOOK_GENERATE_BATCH, self::HOOK_SWEEP, self::HOOK_SWEEP_PAGE, self::HOOK_PRUNE, self::HOOK_AUTO_SNAPSHOT ];
+	public const WATCHDOG_TRANSIENT  = 'scwc_schedule_check';
 
 	public function __construct(
 		private readonly SchedulerBackend $backend,
@@ -69,6 +70,9 @@ class Scheduler {
 
 	public function reschedule(): void {
 		foreach ( self::HOOKS as $hook ) {
+			if ( self::HOOK_GENERATE_BATCH === $hook && (bool) $this->settings->get( 'price_list.enabled', true ) ) {
+				continue; // Replacing the daily schedule must not strand a checkpoint in progress.
+			}
 			$this->backend->unscheduleAll( $hook );
 		}
 		$this->ensureScheduled();
@@ -100,6 +104,21 @@ class Scheduler {
 			$at = $now;
 		}
 		$this->backend->scheduleSingle( $at, self::HOOK_GENERATE, $args, false );
+	}
+
+	/** Keep one continuation. The delayed one survives a killed PHP worker. */
+	public function continueGeneration( int $delay ): void {
+		$at   = $this->clock->now()->getTimestamp() + $delay;
+		$next = $this->backend->nextScheduled( self::HOOK_GENERATE_BATCH, [] );
+		if ( null !== $next && $next <= $at ) {
+			return;
+		}
+		$this->backend->unscheduleAll( self::HOOK_GENERATE_BATCH );
+		$this->backend->scheduleSingle( $at, self::HOOK_GENERATE_BATCH, [], false );
+	}
+
+	public function finishGeneration(): void {
+		$this->backend->unscheduleAll( self::HOOK_GENERATE_BATCH );
 	}
 
 	/**

@@ -32,7 +32,9 @@ final class ActionSchedulerBackend implements SchedulerBackend {
 	}
 
 	public function unscheduleAll( string $hook ): void {
-		as_unschedule_all_actions( $hook, [], self::GROUP );
+		// An empty array matches only argument-free jobs when both hook and group are supplied.
+		// @phpstan-ignore argument.type (The native implementation accepts null to match all argument variants.)
+		as_unschedule_all_actions( $hook, null, self::GROUP );
 	}
 
 	public function name(): string {

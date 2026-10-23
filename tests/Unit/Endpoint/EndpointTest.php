@@ -195,7 +195,8 @@ final class EndpointTest extends TestCase {
 		self::assertSame( 403, $r->status );
 		self::assertSame( [], $this->runs );
 		$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'index', 'scwc_run' => '1', 'key' => 'secret' ], [] );
-		self::assertSame( 200, $r->status );
+		self::assertSame( 202, $r->status );
+		self::assertStringContainsString( '"queued":true', $r->body );
 		self::assertSame( [ 'external' ], $this->runs );
 		self::assertStringContainsString( '"ok":true', $r->body );
 	}

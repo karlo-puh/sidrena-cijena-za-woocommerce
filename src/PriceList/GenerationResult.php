@@ -24,6 +24,7 @@ final class GenerationResult {
 		public readonly ?string $error,
 		public readonly int $products,
 		public readonly int $services,
+		public readonly bool $busy = false,
 	) {}
 
 	public function ok(): bool {

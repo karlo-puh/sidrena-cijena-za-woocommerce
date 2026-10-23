@@ -163,7 +163,8 @@ class ToolsAjax {
 	 * @return array<string,mixed>
 	 */
 	private function importApply( array $args ): array {
-		$token = sanitize_key( (string) ( $args['token'] ?? '' ) );
+		$token = (string) ( $args['token'] ?? '' );
+		$token = preg_match( '/^[a-zA-Z0-9]{1,64}$/D', $token ) ? $token : ''; // Tokens are case-sensitive, including in Redis.
 		$data  = '' === $token ? false : get_transient( self::TRANSIENT_BASE . $token );
 		if ( ! is_array( $data ) ) {
 			throw new \RuntimeException( __( 'Pregled uvoza je istekao. Ponovno učitajte datoteku.', 'sidrena-cijena-za-woocommerce' ) );

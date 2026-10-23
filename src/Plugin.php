@@ -310,7 +310,7 @@ final class Plugin {
 						$updater->apply( $snapshot, $recorder->record( $snapshot, 'sweep' ) );
 					};
 				}
-				return new Collector( Collector::wcPager(), $c->get( 'product_loader' ), $c->get( ProductAdapter::class ), $c->get( ItemFactory::class ), 200, $observer );
+				return new Collector( Collector::wcPager(), $c->get( 'product_loader' ), $c->get( ProductAdapter::class ), $c->get( ItemFactory::class ), 100, $observer );
 			}
 		);
 		$c->set( Storage::class, static fn() => Storage::fromUploads() );
@@ -346,7 +346,10 @@ final class Plugin {
 				$c->get( Manifest::class ),
 				new Headers(),
 				$c->get( IndexRenderer::class ),
-				static fn( string $reason ): bool => $c->get( Generator::class )->run( $reason )->ok(),
+				static function ( string $reason ) use ( $c ): bool {
+					$c->get( Scheduler::class )->scheduleGenerationSoon( 0, $reason );
+					return true;
+				},
 			)
 		);
 
@@ -358,8 +361,16 @@ final class Plugin {
 			JobRunner::class,
 			static fn( Container $c ) => new JobRunner(
 				$c->get( Scheduler::class ),
-				static function ( string $reason ) use ( $c ): void {
-				$c->get( Generator::class )->run( $reason );
+				static function ( string $reason ) use ( $c ): bool {
+				$generator = $c->get( Generator::class );
+				$result    = $generator->step( $reason );
+				if ( null !== $result && $result->busy ) {
+					return true; // The active worker owns the checkpoint; leave a continuation queued.
+				}
+				if ( null !== $result && ! $result->ok() ) {
+					throw new \RuntimeException( (string) $result->error );
+				}
+				return $generator->pending();
 				},
 				static fn( int $page ) => $c->get( DailySweep::class )->run( $page, self::SWEEP_PAGE_SIZE ),
 				static function () use ( $c ): void {
@@ -397,7 +408,10 @@ final class Plugin {
 		$c->set(
 			AdminActions::class,
 			static fn( Container $c ) => new AdminActions(
-				static fn(): ?string => $c->get( Generator::class )->run( 'manual' )->error,
+				static function () use ( $c ): ?string {
+					$c->get( Scheduler::class )->scheduleGenerationSoon( 0, 'manual' );
+					return null;
+				},
 				static function () use ( $c ): void {
 				$c->get( JobRunner::class )->sweep();
 				},

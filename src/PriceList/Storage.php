@@ -41,6 +41,34 @@ class Storage {
 		}
 	}
 
+	/** Checked, atomic replacement. Callers serialize writes with the generation lock. */
+	public function writeAtomic( string $path, string $contents ): void {
+		$tmp = $path . '.new';
+		try {
+			if ( strlen( $contents ) !== file_put_contents( $tmp, $contents ) || ! rename( $tmp, $path ) ) {
+				throw new RuntimeException( 'Unable to save price-list state.' );
+			}
+		} finally {
+			if ( is_file( $tmp ) ) {
+				unlink( $tmp );
+			}
+		}
+	}
+
+	/** @return resource|null A process-owned lock, released automatically even after a fatal error. */
+	public function lock() {
+		$this->ensure();
+		$handle = fopen( $this->path( 'generation.lock' ), 'c' );
+		if ( false === $handle ) {
+			throw new RuntimeException( 'Unable to open price-list lock.' );
+		}
+		if ( ! flock( $handle, LOCK_EX | LOCK_NB ) ) {
+			fclose( $handle );
+			return null;
+		}
+		return $handle;
+	}
+
 	public function dir(): string {
 		return $this->dir;
 	}

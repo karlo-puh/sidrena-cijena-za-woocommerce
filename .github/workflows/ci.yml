@@ -33,6 +33,9 @@ jobs:
   woocommerce:
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:7-alpine
+        ports: [ '6379:6379' ]
       mysql:
         image: mysql:8.0
         env:
@@ -60,17 +63,35 @@ jobs:
         env:
           WP_CLI_PHP_ARGS: '-d memory_limit=512M'
         run: |
+          bash bin/build-zip.sh
           mkdir -p /tmp/scwc-wp
           wp core download --path=/tmp/scwc-wp
           wp config create --path=/tmp/scwc-wp --dbname=wordpress --dbuser=root --dbpass=wordpress --dbhost=127.0.0.1
           wp config set DISABLE_WP_CRON true --raw --path=/tmp/scwc-wp
-          wp core install --path=/tmp/scwc-wp --url=http://localhost --title=Test --admin_user=test --admin_password=test-password --admin_email=test@example.com --skip-email
+          wp core install --path=/tmp/scwc-wp --url=http://scwc-test.invalid --title=Test --admin_user=test --admin_password=test-password --admin_email=test@example.com --skip-email
           wp option update timezone_string Europe/Zagreb --path=/tmp/scwc-wp
           wp plugin install woocommerce --version=9.9.0 --activate --path=/tmp/scwc-wp
-          bash bin/build-zip.sh
-          unzip -q dist/*.zip -d /tmp/scwc-wp/wp-content/plugins
-          wp plugin activate sidrena-cijena-za-woocommerce --path=/tmp/scwc-wp
+          wp plugin install "$GITHUB_WORKSPACE"/dist/*.zip --activate --path=/tmp/scwc-wp
       - name: Check real product saves, admin pricing, CSV import and variations
         env:
           WP_CLI_PHP_ARGS: '-d memory_limit=512M'
         run: wp eval-file tests/integration/first-offer.php --path=/tmp/scwc-wp --user=test
+
+      - name: Check batched price lists and real Redis imports
+        env:
+          WP_CLI_PHP_ARGS: '-d memory_limit=256M'
+        run: |
+          wp plugin install redis-cache --version=2.7.0 --activate --path=/tmp/scwc-wp
+          wp config set WP_REDIS_HOST 127.0.0.1 --path=/tmp/scwc-wp
+          wp config set WP_REDIS_CLIENT predis --path=/tmp/scwc-wp
+          wp redis enable --path=/tmp/scwc-wp
+          wp eval-file tests/integration/price-list.php configure --path=/tmp/scwc-wp --user=test
+          wp eval-file tests/integration/price-list.php setup --path=/tmp/scwc-wp --user=test
+          for i in $(seq 1 30); do
+            wp action-scheduler run --hooks=scwc_generate_price_list,scwc_generate_price_list_batch --batch-size=1 --batches=1 --force --path=/tmp/scwc-wp
+            result=$(wp eval-file tests/integration/price-list.php step --path=/tmp/scwc-wp --user=test)
+            echo "$result"
+            if [[ "$result" == *'EXPORT_COMPLETE'* ]]; then break; fi
+          done
+          wp eval-file tests/integration/price-list.php verify --path=/tmp/scwc-wp --user=test
+          wp eval-file tests/integration/streaming.php --path=/tmp/scwc-wp --user=test

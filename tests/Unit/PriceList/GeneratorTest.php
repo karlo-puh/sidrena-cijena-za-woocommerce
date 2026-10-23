@@ -54,7 +54,7 @@ final class GeneratorTest extends TestCase {
 	 */
 	private function collector( array $items, int $times = 1 ): Collector {
 		$collector = \Mockery::mock( Collector::class );
-		$collector->shouldReceive( 'items' )->times( $times )->andReturnUsing( static fn() => ( static function () use ( $items ) { yield from $items; } )() );
+		$collector->shouldReceive( 'batch' )->times( $times )->with( 0 )->andReturn( [ 'items' => $items, 'cursor' => count( $items ), 'done' => true ] );
 		return $collector;
 	}
 
@@ -188,7 +188,7 @@ final class GeneratorTest extends TestCase {
 		$csv       = \Mockery::mock( Writer::class );
 		$seen      = [];
 		$capture   = function ( iterable $items, Outlet $outlet, DateTimeImmutable $at, string $path, array $types ) use ( &$seen ) {
-			$seen[] = is_array( $items ) ? count( $items ) : -1;
+			$seen[] = iterator_count( ( static function () use ( $items ) { yield from $items; } )() );
 			self::assertSame( [ 'anchor' ], array_map( fn( $t ) => $t->key, $types ) );
 			file_put_contents( $path, 'x' );
 			return new \SidrenaCijena\PriceList\WriteStats( 2, 1 );
@@ -201,14 +201,14 @@ final class GeneratorTest extends TestCase {
 	}
 
 	public function test_refuses_to_run_while_locked_and_leaves_foreign_lock_alone(): void {
-		set_transient( 'scwc_generating', 1, 900 );
+		$lock = $this->storage->lock();
 		Functions\expect( 'update_option' )->never();
 		$result = $this->generator( null, $this->collector( [], 0 ) )->run();
 		self::assertFalse( $result->ok() );
 		self::assertSame( 'Generiranje je već u tijeku.', $result->error );
 		self::assertSame( [], $result->files );
-		self::assertSame( 1, get_transient( 'scwc_generating' ) );
-		self::assertDirectoryDoesNotExist( $this->dir );
+		self::assertNull( $this->storage->lock(), 'The unsuccessful worker cannot release another process lock.' );
+		fclose( $lock );
 	}
 
 	public function test_disabled_price_list_is_an_error_without_files(): void {
@@ -239,8 +239,10 @@ final class GeneratorTest extends TestCase {
 		self::assertSame( 'Disk pun', $result->error );
 		self::assertSame( [], $result->files );
 		self::assertSame( [], $this->storage->listFiles() );
-		self::assertSame( [], glob( $this->dir . '/tmp/*' ) ?: [] );
-		self::assertFalse( get_transient( 'scwc_generating' ) );
+		self::assertFileExists( $this->dir . '/tmp/generation.json', 'Failed output can be retried without collecting the catalogue again.' );
+		$lock = $this->storage->lock();
+		self::assertIsResource( $lock );
+		fclose( $lock );
 		self::assertSame( [], ( new Manifest( $this->storage ) )->entries() );
 	}
 
@@ -254,9 +256,134 @@ final class GeneratorTest extends TestCase {
 		self::assertFalse( $this->manifest->has( 'old_20260101_060000.xml' ) );
 	}
 
+	public function test_batches_resume_after_an_interrupted_append_without_duplicates(): void {
+		$items = $this->items();
+		$collector = \Mockery::mock( Collector::class );
+		$collector->shouldReceive( 'batch' )->once()->with( 0 )->andReturn( [ 'items' => [ $items[0] ], 'cursor' => 10, 'done' => false ] );
+		$collector->shouldReceive( 'batch' )->once()->with( 10 )->andReturn( [ 'items' => [ $items[1], $items[2] ], 'cursor' => 20, 'done' => true ] );
+		self::assertNull( $this->generator( null, $collector )->step( 'scheduled' ) );
+		self::assertSame( [], ( new Manifest( $this->storage ) )->entries() );
+		// Simulate a killed process: disk append happened but the cursor was never committed.
+		file_put_contents( $this->storage->tmpPath( 'rows.ndjson' ), "partial uncommitted garbage", FILE_APPEND );
+		$result = $this->generator( null, $collector )->run( 'manual' );
+		self::assertTrue( $result->ok(), (string) $result->error );
+		self::assertSame( 'scheduled', $result->reason, 'A second request resumes the existing generation.' );
+		self::assertSame( 2, $result->products );
+		self::assertSame( 1, $result->services );
+		self::assertCount( 2, simplexml_load_file( $this->storage->path( $result->files[0]['name'] ) )->Proizvodi->Proizvod );
+		self::assertNull( $this->generator( null, $this->collector( [], 0 ) )->step( '__resume' ), 'A stale continuation is a no-op.' );
+	}
+
+	public function test_second_writer_failure_preserves_previous_generation_and_retries_without_recollection(): void {
+		$old = $this->generator()->run();
+		$oldManifest = file_get_contents( $this->storage->path( Manifest::FILENAME ) );
+		$oldXml = file_get_contents( $this->storage->path( $old->files[0]['name'] ) );
+		$csv = \Mockery::mock( Writer::class );
+		$csv->shouldReceive( 'write' )->once()->andThrow( new \RuntimeException( 'Disk full' ) );
+		$failed = $this->generator( null, null, [ 'xml' => new XmlWriter(), 'csv' => $csv ] )->run();
+		self::assertSame( 'Disk full', $failed->error );
+		self::assertSame( $oldManifest, file_get_contents( $this->storage->path( Manifest::FILENAME ) ) );
+		self::assertSame( $oldXml, file_get_contents( $this->storage->path( $old->files[0]['name'] ) ) );
+		$retry = $this->generator( null, $this->collector( [], 0 ) )->run();
+		self::assertTrue( $retry->ok(), (string) $retry->error );
+		self::assertNotSame( $old->files[0]['name'], $retry->files[0]['name'], 'Same-second generations cannot overwrite live files.' );
+		self::assertCount( 4, ( new Manifest( $this->storage ) )->entries() );
+	}
+
+	public function test_interrupted_publication_reuses_completed_files(): void {
+		$g = $this->generator();
+		self::assertNull( $g->step() ); // Collection.
+		self::assertNull( $g->step() ); // XML.
+		self::assertNull( $g->step() ); // CSV.
+		$state = json_decode( file_get_contents( $this->storage->tmpPath( 'generation.json' ) ), true );
+		$this->storage->publish( $state['files'][0]['name'] ); // Killed between the two renames.
+		self::assertSame( [], ( new Manifest( $this->storage ) )->entries() );
+		$result = $this->generator( null, $this->collector( [], 0 ) )->run();
+		self::assertTrue( $result->ok(), (string) $result->error );
+		self::assertCount( 2, ( new Manifest( $this->storage ) )->entries() );
+	}
+
+	public function test_cache_flush_cannot_remove_a_live_generation_lock(): void {
+		$lock = $this->storage->lock();
+		$GLOBALS['scwc_test_transients'] = []; // Redis eviction / flush does not control this lock.
+		self::assertFalse( $this->generator( null, $this->collector( [], 0 ) )->run()->ok() );
+		fclose( $lock );
+		self::assertTrue( $this->generator()->run()->ok() );
+	}
+
+	public function test_previous_day_checkpoint_is_restarted_instead_of_publishing_stale_rows(): void {
+		self::assertNull( $this->generator()->step() );
+		$path = $this->storage->tmpPath( 'generation.json' );
+		$state = json_decode( file_get_contents( $path ), true );
+		$state['at'] = '2026-09-30T06:00:12+02:00';
+		file_put_contents( $path, json_encode( $state ) );
+		$result = $this->generator( null, $this->collector( [ $this->items()[0] ] ) )->run();
+		self::assertTrue( $result->ok(), (string) $result->error );
+		self::assertSame( 1, $result->products );
+		self::assertSame( 0, $result->services );
+		self::assertSame( '2026-10-01', $result->generatedAt->format( 'Y-m-d' ) );
+	}
+
 	public function test_generation_result_ok(): void {
 		$at = new DateTimeImmutable( '2026-10-01 06:00:12' );
 		self::assertTrue( ( new GenerationResult( [], $at, 'manual', null, 0, 0 ) )->ok() );
 		self::assertFalse( ( new GenerationResult( [], $at, 'manual', 'x', 0, 0 ) )->ok() );
+	}
+
+	public function test_lock_storage_failure_is_reported_in_status(): void {
+		$this->storage = \Mockery::mock( Storage::class );
+		$this->storage->shouldReceive( 'lock' )->once()->andThrow( new \RuntimeException( 'Uploads not writable' ) );
+		Functions\expect( 'update_option' )->once()->with( Generator::OPTION_LAST, \Mockery::on( fn( array $last ) => 'Uploads not writable' === $last['error'] ) );
+		$result = $this->generator( null, $this->collector( [], 0 ) )->step();
+		self::assertSame( 'Uploads not writable', $result->error );
+	}
+
+	public function test_corrupt_checkpoint_restarts_without_losing_the_published_catalogue(): void {
+		$old = $this->generator()->run();
+		$oldXml = file_get_contents( $this->storage->path( $old->files[0]['name'] ) );
+		file_put_contents( $this->storage->tmpPath( 'generation.json' ), '{broken' );
+		$result = $this->generator()->run( '__resume' );
+		self::assertTrue( $result->ok(), (string) $result->error );
+		self::assertSame( 'scheduled', $result->reason );
+		self::assertSame( 2, $result->products );
+		self::assertSame( $oldXml, file_get_contents( $this->storage->path( $old->files[0]['name'] ) ) );
+	}
+
+	/** @dataProvider damagedRows */
+	public function test_missing_or_truncated_rows_restart_from_zero( bool $missing ): void {
+		self::assertNull( $this->generator()->step() );
+		$path = $this->storage->tmpPath( 'rows.ndjson' );
+		if ( $missing ) {
+			unlink( $path );
+		} else {
+			file_put_contents( $path, '' );
+		}
+		$result = $this->generator()->run( '__resume' );
+		self::assertTrue( $result->ok(), (string) $result->error );
+		self::assertSame( 2, $result->products );
+		self::assertSame( 1, $result->services );
+	}
+
+	public static function damagedRows(): array {
+		return [ 'missing' => [ true ], 'truncated' => [ false ] ];
+	}
+
+	public function test_repeated_worker_deaths_stop_after_three_attempts(): void {
+		self::assertNull( $this->generator()->step() );
+		$path = $this->storage->tmpPath( 'generation.json' );
+		$state = json_decode( file_get_contents( $path ), true );
+		self::assertSame( 0, $state['attempts'], 'Successful progress resets the retry budget.' );
+		$state['attempts'] = 3; // Three workers died after persisting the attempt, before completing the file.
+		file_put_contents( $path, json_encode( $state ) );
+		$result = $this->generator( null, $this->collector( [], 0 ) )->step( '__resume' );
+		self::assertStringContainsString( 'failed three times', $result->error );
+		self::assertFalse( $this->generator( null, $this->collector( [], 0 ) )->pending() );
+		self::assertSame( [], $this->storage->listFiles() );
+		self::assertNull( $this->generator( null, $this->collector( [], 0 ) )->step( '__resume' ) );
+	}
+
+	public function test_sync_resume_without_a_checkpoint_returns_instead_of_looping(): void {
+		$result = $this->generator( null, $this->collector( [], 0 ) )->run( '__resume' );
+		self::assertSame( 'Nema generiranja za nastavak.', $result->error );
 	}
 }
