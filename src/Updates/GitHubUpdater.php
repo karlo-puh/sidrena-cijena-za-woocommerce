@@ -29,9 +29,20 @@ final class GitHubUpdater {
 	}
 
 	public function register(): void {
+		add_action( 'load-update-core.php', [ $this, 'refreshOnManualCheck' ], 5 );
 		add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'checkUpdate' ] );
 		add_filter( 'plugins_api', [ $this, 'pluginInformation' ], 10, 3 );
 		add_filter( 'upgrader_source_selection', [ $this, 'renameSource' ], 10, 4 );
+	}
+
+	/** Refresh before WordPress's update check at the default priority of 10. */
+	public function refreshOnManualCheck(): void {
+		// WordPress's native "Check again" link has no nonce; only update-capable users may refresh.
+		if ( empty( $_GET['force-check'] ) || ! current_user_can( 'update_plugins' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+		delete_site_transient( self::TRANSIENT );
+		delete_site_transient( 'update_plugins' );
 	}
 
 	/**

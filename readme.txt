@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -96,6 +96,11 @@ Da, najmanje 30 dana. Dodatak čuva i javno poslužuje verzije prema postavci za
 Iz najniže cijene u 30 dana prije početka sniženja (a ne iz redovne cijene), zaokruženo na niže.
 
 == Changelog ==
+
+= 1.3.1 =
+* „Provjeri ponovno” na WordPress stranici Ažuriranja sada osvježava i GitHub izdanje, uključujući prethodno neuspjelu provjeru.
+* Redovite provjere i dalje koriste predmemoriju; nema novih postavki ni promjena u izvozu cjenika.
+* Pri prvom prijelazu s verzije 1.2.2 ili 1.3.0 može biti potrebno pričekati istek stare predmemorije (do 12 sati) i sljedeću provjeru ažuriranja.
 
 = 1.3.0 =
 * Veliki cjenici obrađuju se u manjim radnjama kroz postojeći Action Scheduler, s napretkom i redcima na disku.

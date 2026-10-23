@@ -77,6 +77,9 @@ jobs:
           WP_CLI_PHP_ARGS: '-d memory_limit=512M'
         run: wp eval-file tests/integration/first-offer.php --path=/tmp/scwc-wp --user=test
 
+      - name: Check native WordPress update refresh
+        run: wp eval-file tests/integration/updates.php --path=/tmp/scwc-wp --user=test
+
       - name: Check batched price lists and real Redis imports
         env:
           WP_CLI_PHP_ARGS: '-d memory_limit=256M'

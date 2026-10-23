@@ -49,6 +49,7 @@ else
   wp plugin activate sidrena-cijena-za-woocommerce
 fi
 wp eval-file /plugin/tests/integration/first-offer.php --user=test
+wp eval-file /plugin/tests/integration/updates.php --user=test
 wp plugin install redis-cache --version=2.7.0 --activate
 wp config set WP_REDIS_HOST redis
 wp config set WP_REDIS_CLIENT predis

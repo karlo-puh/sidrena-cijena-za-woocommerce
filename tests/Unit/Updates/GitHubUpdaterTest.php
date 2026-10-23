@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace SidrenaCijena\Tests\Unit\Updates;
 
+use Brain\Monkey\Actions;
 use Brain\Monkey\Filters;
+use Brain\Monkey\Functions;
 use SidrenaCijena\Tests\TestCase;
 use SidrenaCijena\Updates\GitHubUpdater;
 
@@ -14,6 +16,11 @@ final class GitHubUpdaterTest extends TestCase {
 		parent::setUp();
 		$GLOBALS['scwc_test_http_get'] = [];
 		unset( $GLOBALS['scwc_test_transients'][ GitHubUpdater::TRANSIENT ] );
+	}
+
+	protected function tearDown(): void {
+		unset( $_GET['force-check'], $GLOBALS['scwc_test_transients']['update_plugins'] );
+		parent::tearDown();
 	}
 
 	private function release( string $tag = 'v1.2.0', bool $withAsset = true ): void {
@@ -41,10 +48,65 @@ final class GitHubUpdaterTest extends TestCase {
 	}
 
 	public function test_registers_update_and_info_filters(): void {
+		Actions\expectAdded( 'load-update-core.php' )->once()->with( \Mockery::type( 'callable' ), 5 );
 		Filters\expectAdded( 'pre_set_site_transient_update_plugins' )->once();
 		Filters\expectAdded( 'plugins_api' )->once()->with( \Mockery::type( 'callable' ), 10, 3 );
 		Filters\expectAdded( 'upgrader_source_selection' )->once()->with( \Mockery::type( 'callable' ), 10, 4 );
 		$this->updater()->register();
+	}
+
+	public function test_manual_check_discovers_a_release_hidden_by_a_cached_success(): void {
+		$this->release( 'v1.2.2' );
+		$updater = $this->updater( '1.2.2' );
+		$updater->latest();
+		$GLOBALS['scwc_test_transients']['update_plugins'] = (object) [ 'last_checked' => time() ];
+		$this->release( 'v1.3.1' );
+		self::assertSame( '1.2.2', $updater->latest()['version'] );
+
+		$_GET['force-check'] = '1';
+		$updater->refreshOnManualCheck();
+		self::assertArrayNotHasKey( 'update_plugins', $GLOBALS['scwc_test_transients'] );
+		$update = $updater->checkUpdate( (object) [ 'response' => [] ] );
+		self::assertSame( '1.3.1', $update->response['sidrena-cijena-za-woocommerce/sidrena-cijena-za-woocommerce.php']->new_version );
+		$GLOBALS['scwc_test_http_get'] = [];
+		self::assertSame( '1.3.1', $updater->latest()['version'], 'Subsequent reads reuse the refreshed cache.' );
+	}
+
+	public function test_manual_check_retries_a_cached_failure(): void {
+		$updater = $this->updater();
+		self::assertNull( $updater->latest() );
+		$this->release( 'v1.3.1' );
+		self::assertNull( $updater->latest() );
+		$_GET['force-check'] = '1';
+		$updater->refreshOnManualCheck();
+		self::assertSame( '1.3.1', $updater->latest()['version'] );
+	}
+
+	public function test_normal_updates_page_visit_preserves_both_caches(): void {
+		$this->release( 'v1.2.2' );
+		$updater = $this->updater();
+		$updater->latest();
+		$GLOBALS['scwc_test_transients']['update_plugins'] = 'existing';
+		$this->release( 'v1.3.1' );
+		foreach ( [ null, '0', '' ] as $flag ) {
+			$_GET['force-check'] = $flag;
+			$updater->refreshOnManualCheck();
+			self::assertSame( '1.2.2', $updater->latest()['version'] );
+			self::assertSame( 'existing', $GLOBALS['scwc_test_transients']['update_plugins'] );
+		}
+	}
+
+	public function test_user_without_update_permission_cannot_refresh_caches(): void {
+		Functions\expect( 'current_user_can' )->once()->with( 'update_plugins' )->andReturn( false );
+		$this->release( 'v1.2.2' );
+		$updater = $this->updater();
+		$updater->latest();
+		$GLOBALS['scwc_test_transients']['update_plugins'] = 'existing';
+		$this->release( 'v1.3.1' );
+		$_GET['force-check'] = '1';
+		$updater->refreshOnManualCheck();
+		self::assertSame( '1.2.2', $updater->latest()['version'] );
+		self::assertSame( 'existing', $GLOBALS['scwc_test_transients']['update_plugins'] );
 	}
 
 	public function test_latest_release_prefers_the_zip_asset_and_strips_the_v(): void {

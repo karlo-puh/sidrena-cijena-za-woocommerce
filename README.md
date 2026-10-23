@@ -87,7 +87,7 @@ git clone https://github.com/kbiro-nander/sidrena-cijena-za-woocommerce.git wp-c
 
 ## Ažuriranje
 
-Dodatak provjerava [GitHub Releases](../../releases) i WordPress prikazuje uobičajeni gumb „Ažuriraj sada” kad postoji novija verzija. Ručno ažuriranje: prenesite novi ZIP i odaberite „Zamijeni trenutni prenesenim”.
+Dodatak provjerava [GitHub Releases](../../releases) i WordPress prikazuje uobičajeni gumb „Ažuriraj sada” kad postoji novija verzija. Od verzije **1.3.1**, **Nadzorna ploča → Ažuriranja → Provjeri ponovno** osvježava i GitHub podatke; redovite provjere i dalje koriste predmemoriju do 12 sati. Pri prvom prijelazu s 1.2.2 ili 1.3.0 može biti potrebno pričekati istek stare predmemorije i sljedeću provjeru. Ručno ažuriranje: prenesite novi ZIP i odaberite „Zamijeni trenutni prenesenim”.
 
 ## Brzi start
 
