@@ -36,7 +36,6 @@ final class PriceHtmlComposer {
 			|| null === $data->regularDisplay
 			|| 'variable' === $product->get_type()
 			|| ! (bool) $this->settings->get( 'display.omnibus_replace_del', true )
-			|| $data->omnibus->amount >= $data->regularDisplay
 		) {
 			return $wcHtml;
 		}

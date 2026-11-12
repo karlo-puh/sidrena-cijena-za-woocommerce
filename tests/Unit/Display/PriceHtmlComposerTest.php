@@ -86,14 +86,13 @@ final class PriceHtmlComposerTest extends TestCase {
 		}
 	}
 
-	public function test_del_kept_when_lowest_equals_or_exceeds_regular_or_setting_off(): void {
-		$p    = $this->product( [ 'id' => 1, 'regular_price' => '20', 'sale_price' => '10' ] );
-		$wc   = '<del>20</del> <ins>10</ins>';
-		$data = new BadgeData( 1, [], new OmnibusView( 20.0, '20,00 €', 50, 'history' ), true, 10.0, 20.0 );
-		self::assertStringStartsWith( '<del>20</del> <ins>10</ins>', $this->composer()->compose( $wc, $p, $data, BadgeContext::SINGLE ) );
-		$data2 = new BadgeData( 1, [], new OmnibusView( 15.0, '15,00 €', 33, 'history' ), true, 10.0, 20.0 );
-		$off   = ( new Settings( Defaults::all() ) )->with( 'display.omnibus_replace_del', false );
-		self::assertStringStartsWith( '<del>20</del> <ins>10</ins>', $this->composer( $off )->compose( $wc, $p, $data2, BadgeContext::SINGLE ) );
+	public function test_strikethrough_uses_lowest_30_even_when_not_below_regular(): void {
+		$p    = $this->product( [ 'id' => 1, 'regular_price' => '48.93', 'sale_price' => '43.94' ] );
+		$wc   = '<del>48,93</del> <ins>43,94</ins>';
+		$data = new BadgeData( 1, [], new OmnibusView( 63.10, '63,10 €', 30, 'history' ), true, 43.94, 48.93 );
+		self::assertStringStartsWith( '<del aria-hidden="true"><span class="woocommerce-Price-amount amount">63,10&nbsp;€</span></del>', $this->composer()->compose( $wc, $p, $data, BadgeContext::SINGLE ), 'strikethrough and percentage share the 30-day low' );
+		$off = ( new Settings( Defaults::all() ) )->with( 'display.omnibus_replace_del', false );
+		self::assertStringStartsWith( $wc, $this->composer( $off )->compose( $wc, $p, $data, BadgeContext::SINGLE ) );
 	}
 
 	public function test_del_never_rebuilt_for_variable_parents(): void {
