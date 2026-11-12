@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -106,6 +106,14 @@ Zadano raspon cijena varijacija; precrtana cijena, najniža cijena u 30 dana i p
 Postavka je namijenjena temama koje pri odabiru varijante zamijene glavnu cijenu proizvoda cijenom odabrane varijante (npr. WoodMart). S klasičnim WooCommerce predloškom koji cijenu odabrane varijante prikazuje ispod glavne, i s blokovskim predloškom proizvoda (blok „Product Price”), ostavite raspon.
 
 == Changelog ==
+
+= 1.4.0 =
+* Kad najniža cijena u 30 dana prije sniženja nije viša od trenutačne cijene, nema stvarnog sniženja: bez precrtane cijene i postotka (najniža cijena i dalje je istaknuta).
+* Precrtana cijena i postotak uvijek se računaju od najniže cijene u 30 dana, i kad je ona viša od trenutačne redovne cijene.
+* Ispravak: nova akcijska cijena više ne može postati vlastita najniža cijena u 30 dana (početak akcije je trenutak zapisa promjene cijene).
+* Povišena cijena tijekom akcije dobiva novu najnižu cijenu u 30 dana, pa se povišenje ne prikazuje kao sniženje. Postupna sniženja zadržavaju najnižu cijenu prije prvog sniženja.
+* Košarica, mini-košarica i blagajna više ne preoblikuju prikaz cijene; iznos stavke uvijek ostaje WooCommerceov.
+* Nova postavka (zadano isključena) „Varijabilni proizvod prikaži kao jednu varijantu” i funkcija `scwc_featured_variation()` za teme.
 
 = 1.3.1 =
 * „Provjeri ponovno” na WordPress stranici Ažuriranja sada osvježava i GitHub izdanje, uključujući prethodno neuspjelu provjeru.

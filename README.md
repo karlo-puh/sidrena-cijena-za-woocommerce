@@ -10,6 +10,15 @@ Ovo je fork projekta [Kristijana Biroa](https://github.com/kbiro-nander/sidrena-
 - Postojeći artikli bez sidrene (uključujući ranije stvorene nacrte) ne popunjavaju se današnjom cijenom. Za njih unesite ili uvezite provjerenu početnu cijenu i stvarni datum. Plugin mora biti aktivan tijekom stvaranja i prve objave novih artikala.
 - Početno prijeđite na fork prijenosom ZIP-a iz Releases preko **Dodaci → Dodaj novi → Prenesi dodatak → Zamijeni postojeću verziju**. Ne brišite prethodni plugin. Direktorij i ključevi podataka ostaju isti. Sljedeća ažuriranja dolaze s ovog forka.
 
+### Verzija 1.4.0: ispravan prikaz sniženja prema najnižoj cijeni u 30 dana
+
+Postavke, referentne cijene i povijest cijena ostaju sačuvani pri nadogradnji. Postojeći prikaz se ne mijenja dok ne uključite nove postavke.
+
+- Bez precrtane cijene i postotka kad najniža cijena u 30 dana prije sniženja nije viša od trenutačne; precrtana cijena i postotak uvijek se računaju od iste najniže cijene. Košarica i blagajna ne preoblikuju prikaz cijene.
+- Nova akcijska cijena više ne može postati vlastita najniža cijena u 30 dana, a povišenje cijene tijekom akcije dobiva novu najnižu cijenu (ne prikazuje se kao sniženje).
+- Zadano isključena postavka „Varijabilni proizvod prikaži kao jednu varijantu”: popis i stranica proizvoda prikazuju varijantu s najvećim stvarnim sniženjem (ili najjeftiniju) među onima na zalihi. Teme je dohvaćaju funkcijom `scwc_featured_variation()`.
+- Vrijednosti spremljene prije 1.4.0 ne preračunavaju se automatski; akcije započete prije instalacije dodatka mogu imati nepotpunu najnižu cijenu (izvor „partial”).
+
 ### Verzija 1.3.0: pouzdanije generiranje velikih cjenika
 
 Postavke i postojeće referentne cijene ostaju sačuvane pri nadogradnji s 1.2.2.
