@@ -47,6 +47,45 @@ final class PriceHtmlComposerTest extends TestCase {
 		self::assertStringContainsString( 'scwc-lowest30', $html );
 	}
 
+	public function test_no_strikethrough_when_lowest_30_is_not_above_current_price(): void {
+		$p  = $this->product(
+			[
+				'id'            => 1,
+				'regular_price' => '100',
+				'sale_price'    => '90',
+				'price_suffix'  => ' <small>s PDV</small>',
+			]
+		);
+		$wc = '<del aria-hidden="true"><span class="amount">100,00 €</span></del> <ins><span class="amount">90,00 €</span></ins>';
+		// An earlier promotion at 80 (or 90) ended less than 30 days before this one started.
+		foreach ( [ 80.0, 90.0 ] as $lowest ) {
+			$data = new BadgeData( 1, [], new OmnibusView( $lowest, '', null, 'history' ), true, 90.0, 100.0 );
+			$html = $this->composer()->compose( $wc, $p, $data, BadgeContext::SINGLE );
+			self::assertStringStartsWith( '<span class="woocommerce-Price-amount amount">90,00&nbsp;€</span> <small>s PDV</small>', $html );
+			self::assertStringNotContainsString( '<del', $html );
+			self::assertStringContainsString( 'scwc-lowest30', $html, 'the 30-day low is still disclosed' );
+		}
+		$off = ( new Settings( Defaults::all() ) )->with( 'display.omnibus_replace_del', false );
+		self::assertStringStartsWith( $wc, $this->composer( $off )->compose( $wc, $p, $data, BadgeContext::SINGLE ), 'setting off leaves WooCommerce markup alone' );
+	}
+
+	public function test_cart_and_checkout_price_html_is_never_rebuilt(): void {
+		$p = $this->product(
+			[
+				'id'            => 1,
+				'regular_price' => '20',
+				'sale_price'    => '10',
+			]
+		);
+		foreach ( [ BadgeContext::CART, BadgeContext::MINI_CART, BadgeContext::CHECKOUT ] as $context ) {
+			foreach ( [ true, false ] as $isReduction ) {
+				$data = new BadgeData( 1, [], new OmnibusView( $isReduction ? 15.0 : 8.0, '', null, 'history' ), true, 10.0, 20.0 );
+				$html = $this->composer()->compose( '<span class="amount">30,00 €</span>', $p, $data, $context );
+				self::assertStringStartsWith( '<span class="amount">30,00 €</span> <span class="scwc-badge', $html, $context );
+			}
+		}
+	}
+
 	public function test_del_kept_when_lowest_equals_or_exceeds_regular_or_setting_off(): void {
 		$p    = $this->product( [ 'id' => 1, 'regular_price' => '20', 'sale_price' => '10' ] );
 		$wc   = '<del>20</del> <ins>10</ins>';

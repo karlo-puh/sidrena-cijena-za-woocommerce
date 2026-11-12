@@ -95,6 +95,8 @@ Da, najmanje 30 dana. Dodatak čuva i javno poslužuje verzije prema postavci za
 
 Iz najniže cijene u 30 dana prije početka sniženja (a ne iz redovne cijene), zaokruženo na niže.
 
+Ako ta najniža cijena nije viša od trenutačne cijene, nema stvarnog sniženja: dodatak tada ne prikazuje precrtanu cijenu ni postotak, a najniža cijena u 30 dana i dalje je istaknuta.
+
 == Changelog ==
 
 = 1.3.1 =

@@ -17,7 +17,7 @@ final class PriceHtmlComposer {
 	public function __construct( private readonly Settings $settings, private readonly PriceBadge $badge ) {}
 
 	public function compose( string $wcHtml, WC_Product $product, BadgeData $data, string $context ): string {
-		$html  = $this->maybeRebuildSaleHtml( $wcHtml, $product, $data );
+		$html  = $this->maybeRebuildSaleHtml( $wcHtml, $product, $data, $context );
 		$badge = $this->badge->render( $data, $context );
 		if ( '' === $badge ) {
 			return $html;
@@ -27,9 +27,11 @@ final class PriceHtmlComposer {
 			: $html . ' ' . $badge;
 	}
 
-	private function maybeRebuildSaleHtml( string $wcHtml, WC_Product $product, BadgeData $data ): string {
+	private function maybeRebuildSaleHtml( string $wcHtml, WC_Product $product, BadgeData $data, string $context ): string {
 		if (
-			! $data->isOnSale
+			// Cart/checkout HTML is a unit price or a line subtotal, never a sale display: leave it.
+			in_array( $context, BadgeContext::CART_LIKE, true )
+			|| ! $data->isOnSale
 			|| null === $data->omnibus
 			|| null === $data->regularDisplay
 			|| 'variable' === $product->get_type()
@@ -37,6 +39,12 @@ final class PriceHtmlComposer {
 			|| $data->omnibus->amount >= $data->regularDisplay
 		) {
 			return $wcHtml;
+		}
+		if ( $data->omnibus->amount <= $data->currentDisplay ) {
+			// The 30-day low before the sale (e.g. an earlier promotion's price) is not above
+			// today's price: there is no reduction to announce, so no struck-through price.
+			// The 30-day low itself is still shown in the badge.
+			return wc_price( $data->currentDisplay ) . $product->get_price_suffix();
 		}
 		return wc_format_sale_price( wc_price( $data->omnibus->amount ), wc_price( $data->currentDisplay ) ) . $product->get_price_suffix();
 	}
