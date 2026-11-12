@@ -148,10 +148,27 @@ if ( ! class_exists( 'WC_Product_Grouped' ) ) {
 if ( ! class_exists( 'WC_Product_Variable' ) ) {
 	class WC_Product_Variable extends WC_Product {
 		public function __construct( array $props = [] ) { parent::__construct( array_merge( [ 'type' => 'variable' ], $props ) ); }
+		/** @return array{price:array<int,string>,regular_price:array<int,string>,sale_price:array<int,string>} */
+		public function get_variation_prices( $for_display = false ): array {
+			$out = [ 'price' => [], 'regular_price' => [], 'sale_price' => [] ];
+			foreach ( $this->get_visible_children() as $id ) {
+				$v = self::$registry[ $id ] ?? null;
+				if ( ! $v || '' === (string) $v->get_price() ) {
+					continue;
+				}
+				$out['price'][ $id ]         = (string) $v->get_price();
+				$out['regular_price'][ $id ] = (string) $v->get_regular_price();
+				$out['sale_price'][ $id ]    = (string) $v->get_sale_price();
+			}
+			asort( $out['price'] );
+			return $out;
+		}
 	}
 }
 if ( ! class_exists( 'WC_Product_Variation' ) ) {
 	class WC_Product_Variation extends WC_Product {
 		public function __construct( array $props = [] ) { parent::__construct( array_merge( [ 'type' => 'variation' ], $props ) ); }
+		public function variation_is_visible(): bool { return 'publish' === $this->get_status() && '' !== (string) $this->get_price(); }
+		public function is_purchasable(): bool { return (bool) ( $this->props['purchasable'] ?? true ) && '' !== (string) $this->get_price(); }
 	}
 }

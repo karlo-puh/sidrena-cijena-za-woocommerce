@@ -19,10 +19,16 @@ final class PriceHtmlFilter {
 		private readonly RenderGuard $guard,
 		private readonly BadgeDataFactory $factory,
 		private readonly PriceHtmlComposer $composer,
+		private readonly ?FeaturedVariation $featured = null,
 	) {}
 
 	public function register(): void {
 		add_filter( 'woocommerce_get_price_html', [ $this, 'filter' ], 100, 2 );
+		if ( $this->featured?->enabled() ) {
+			// The parent is shown as one variation, so every variation needs its own price HTML to switch
+			// to – WooCommerce leaves it out when all variations share the same regular and sale price.
+			add_filter( 'woocommerce_show_variation_price', '__return_true' );
+		}
 	}
 
 	/**
@@ -40,6 +46,13 @@ final class PriceHtmlFilter {
 		}
 		$this->rendering = true;
 		try {
+			$featured = $this->featured?->forParent( $product, $context );
+			if ( $featured ) {
+				// Show the variable product as its featured variation: that variation's own price,
+				// 30-day low and reference price, all belonging together.
+				$html    = $featured->get_price_html();
+				$product = $featured;
+			}
 			$data = $this->factory->forProduct( $product, $context );
 			return $data ? $this->composer->compose( $html, $product, $data, $context ) : $html;
 		} finally {

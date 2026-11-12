@@ -97,6 +97,14 @@ Iz najniže cijene u 30 dana prije početka sniženja (a ne iz redovne cijene), 
 
 Ako ta najniža cijena nije viša od trenutačne cijene, nema stvarnog sniženja: dodatak tada ne prikazuje precrtanu cijenu ni postotak, a najniža cijena u 30 dana i dalje je istaknuta.
 
+Ako se cijena na akciji tijekom akcije povisi, 30 dana prije povišenja uključuje nižu akcijsku cijenu, pa se najniža cijena računa iznova od trenutka povišenja (povišenje se ne prikazuje kao sniženje). Postupna sniženja zadržavaju najnižu cijenu prije prvog sniženja.
+
+= Kako se prikazuju varijabilni proizvodi? =
+
+Zadano raspon cijena varijacija; precrtana cijena, najniža cijena u 30 dana i postotak prikazuju se kad kupac odabere varijantu. Uz postavku „Varijabilni proizvod prikaži kao jednu varijantu” popis proizvoda i stranica proizvoda prikazuju jednu varijantu – među varijantama na zalihi (ako nijedna nije na zalihi, među svima) onu s najvećim stvarnim sniženjem u odnosu na njezinu najnižu cijenu u 30 dana, a ako nijedna nije snižena, najjeftiniju (kod jednakog sniženja niža cijena) – s njezinom cijenom, precrtanom najnižom cijenom i sidrenom cijenom. Teme je mogu dohvatiti funkcijom `scwc_featured_variation( $product )` (npr. za sliku proizvoda ili zadanu varijantu).
+
+Postavka je namijenjena temama koje pri odabiru varijante zamijene glavnu cijenu proizvoda cijenom odabrane varijante (npr. WoodMart). S klasičnim WooCommerce predloškom koji cijenu odabrane varijante prikazuje ispod glavne, i s blokovskim predloškom proizvoda (blok „Product Price”), ostavite raspon.
+
 == Changelog ==
 
 = 1.3.1 =

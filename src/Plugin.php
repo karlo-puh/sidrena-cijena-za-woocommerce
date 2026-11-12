@@ -25,6 +25,7 @@ use SidrenaCijena\Cli\Commands;
 use SidrenaCijena\Display\Assets;
 use SidrenaCijena\Display\BadgeDataFactory;
 use SidrenaCijena\Display\CartFilters;
+use SidrenaCijena\Display\FeaturedVariation;
 use SidrenaCijena\Display\PriceBadge;
 use SidrenaCijena\Display\PriceFormatter;
 use SidrenaCijena\Display\PriceHtmlComposer;
@@ -275,7 +276,8 @@ final class Plugin {
 		);
 		$c->set( PriceBadge::class, static fn( Container $c ) => new PriceBadge( $c->get( Settings::class ), SCWC_PLUGIN_DIR . 'templates' ) );
 		$c->set( PriceHtmlComposer::class, static fn( Container $c ) => new PriceHtmlComposer( $c->get( Settings::class ), $c->get( PriceBadge::class ) ) );
-		$c->set( PriceHtmlFilter::class, static fn( Container $c ) => new PriceHtmlFilter( $c->get( RenderGuard::class ), $c->get( BadgeDataFactory::class ), $c->get( PriceHtmlComposer::class ) ) );
+		$c->set( FeaturedVariation::class, static fn( Container $c ) => new FeaturedVariation( $c->get( Settings::class ), $c->get( 'product_loader' ) ) );
+		$c->set( PriceHtmlFilter::class, static fn( Container $c ) => new PriceHtmlFilter( $c->get( RenderGuard::class ), $c->get( BadgeDataFactory::class ), $c->get( PriceHtmlComposer::class ), $c->get( FeaturedVariation::class ) ) );
 		$c->set( VariationJsonFilter::class, static fn( Container $c ) => new VariationJsonFilter( $c->get( RenderGuard::class ), $c->get( BadgeDataFactory::class ) ) );
 		$c->set( CartFilters::class, static fn( Container $c ) => new CartFilters( $c->get( Settings::class ), $c->get( RenderGuard::class ), $c->get( BadgeDataFactory::class ), $c->get( PriceHtmlComposer::class ), $c->get( 'request_context' ) ) );
 		$c->set( Shortcode::class, static fn( Container $c ) => new Shortcode( $c->get( RenderGuard::class ), $c->get( BadgeDataFactory::class ), $c->get( PriceBadge::class ), $c->get( 'product_loader' ) ) );

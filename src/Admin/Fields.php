@@ -238,6 +238,12 @@ final class Fields {
 					],
 				],
 				[
+					'path'        => 'display.variable_featured',
+					'type'        => 'checkbox',
+					'label'       => __( 'Varijabilni proizvod prikaži kao jednu varijantu', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Umjesto raspona cijena popis i stranica proizvoda prikazuju cijenu jedne varijante (s njezinom precrtanom najnižom cijenom u 30 dana i postotkom): među varijantama na zalihi (ako nijedna nije na zalihi, među svima) onu s najvećim stvarnim sniženjem, a ako nijedna nije snižena, najjeftiniju.', 'sidrena-cijena-za-woocommerce' ),
+				],
+				[
 					'path'        => 'display.omnibus',
 					'type'        => 'checkbox',
 					'label'       => __( 'Prikaži najnižu cijenu u 30 dana prije sniženja', 'sidrena-cijena-za-woocommerce' ),

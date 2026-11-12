@@ -48,6 +48,7 @@ final class Defaults {
 				'mini_cart'           => true,
 				'item_data'           => true,
 				'variable_loop'       => 'range',
+				'variable_featured'   => false,
 				'omnibus'             => true,
 				'omnibus_label'       => 'Najniža cijena u 30 dana prije sniženja',
 				'omnibus_replace_del' => true,

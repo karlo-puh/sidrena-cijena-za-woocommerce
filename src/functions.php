@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 use SidrenaCijena\Display\BadgeContext;
 use SidrenaCijena\Display\BadgeDataFactory;
+use SidrenaCijena\Display\FeaturedVariation;
 use SidrenaCijena\Display\ReferenceView;
 use SidrenaCijena\Display\OmnibusView;
 use SidrenaCijena\Display\Shortcode;
@@ -82,8 +83,22 @@ if ( ! function_exists( 'scwc_get_lowest_30_day_price' ) ) {
 		if ( ! $wc ) {
 			return null;
 		}
+		$wc   = scwc_featured_variation( $wc ) ?? $wc;
 		$data = Plugin::instance()->get( BadgeDataFactory::class )->forProduct( $wc, BadgeContext::SHORTCODE );
 		return $data?->omnibus;
+	}
+}
+
+if ( ! function_exists( 'scwc_featured_variation' ) ) {
+	/**
+	 * The variation a variable product is shown as – among those in stock, the largest real discount,
+	 * else the cheapest – when the "variable_featured" display setting is on; null otherwise.
+	 *
+	 * @param int|WC_Product|null $product Product.
+	 */
+	function scwc_featured_variation( $product = null ): ?WC_Product {
+		$wc = scwc_resolve_product( $product );
+		return $wc ? Plugin::instance()->get( FeaturedVariation::class )->forParent( $wc ) : null;
 	}
 }
 

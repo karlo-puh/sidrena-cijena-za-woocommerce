@@ -197,4 +197,28 @@ final class HooksTest extends TestCase {
 		self::assertStringContainsString( 'data-scwc-ref="base"', $html );
 		self::assertStringNotContainsString( 'data-scwc-ref="anchor"', $html );
 	}
+
+	public function test_variable_product_price_shows_its_featured_variation(): void {
+		Functions\when( 'get_post_meta' )->alias( fn( int $id, string $key = '', bool $single = false ) => isset( \WC_Product::$registry[ $id ] ) ? \WC_Product::$registry[ $id ]->get_meta( $key ) : '' );
+		$this->settings = $this->settings->with( 'display.variable_featured', true );
+		$this->product( [ 'id' => 61, 'type' => 'variation', 'parent_id' => 60, 'regular_price' => '100', 'sale_price' => '90', 'price_html' => '<del>100</del> <ins>90</ins>', 'meta' => [ '_scwc_omnibus_ref_price' => '100', '_scwc_ref_anchor_price' => '100' ] ] );
+		$this->product( [ 'id' => 62, 'type' => 'variation', 'parent_id' => 60, 'regular_price' => '240.08', 'sale_price' => '180.06', 'price_html' => '<del>240,08</del> <ins>180,06</ins>', 'meta' => [ '_scwc_omnibus_ref_price' => '236.34', '_scwc_ref_anchor_price' => '240.08' ] ] );
+		$parent  = $this->product( [ 'id' => 60, 'type' => 'variable', 'children' => [ 61, 62 ] ] );
+		$featured = new \SidrenaCijena\Display\FeaturedVariation( $this->settings, fn( int $id ) => \wc_get_product( $id ) ?: null );
+		$html    = ( new PriceHtmlFilter( $this->guard(), $this->factory(), $this->composer(), $featured ) )->filter( '<span>90,00 € – 180,06 €</span>', $parent );
+		self::assertStringContainsString( '<del aria-hidden="true"><span class="woocommerce-Price-amount amount">236,34&nbsp;€</span></del>', $html, 'variant 62: 23 % from its 30-day low' );
+		self::assertStringContainsString( '180,06', $html );
+		self::assertStringContainsString( 'scwc-lowest30', $html );
+		self::assertStringContainsString( '240,08', $html, "the featured variant's own reference price" );
+		self::assertStringNotContainsString( 'scwc-ref-price--range', $html );
+	}
+
+	public function test_featured_mode_makes_every_variation_carry_its_price_html(): void {
+		Filters\expectAdded( 'woocommerce_get_price_html' )->twice();
+		Filters\expectAdded( 'woocommerce_show_variation_price' )->once()->with( '__return_true' );
+		$on  = new \SidrenaCijena\Display\FeaturedVariation( $this->settings->with( 'display.variable_featured', true ), fn( int $id ) => null );
+		$off = new \SidrenaCijena\Display\FeaturedVariation( $this->settings, fn( int $id ) => null );
+		( new PriceHtmlFilter( $this->guard(), $this->factory(), $this->composer(), $on ) )->register();
+		( new PriceHtmlFilter( $this->guard(), $this->factory(), $this->composer(), $off ) )->register();
+	}
 }
