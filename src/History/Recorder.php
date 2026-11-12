@@ -51,6 +51,9 @@ class Recorder {
 		if ( $prev->isOnSale && $now->isOnSale && $now->active < $prev->active ) {
 			return Transition::SALE_LOWERED;
 		}
+		if ( $prev->isOnSale && $now->isOnSale && $now->active > $prev->active ) {
+			return Transition::SALE_RAISED;
+		}
 		return Transition::CHANGED;
 	}
 }

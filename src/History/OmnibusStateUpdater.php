@@ -34,11 +34,11 @@ class OmnibusStateUpdater {
 			}
 			return;
 		}
-		$fresh = in_array( $transition, [ Transition::SALE_STARTED, Transition::FIRST ], true );
+		$fresh = in_array( $transition, [ Transition::SALE_STARTED, Transition::SALE_RAISED, Transition::FIRST ], true );
 		if ( ! $fresh && $hasMeta ) {
 			return; // Progressive reductions keep the original reference.
 		}
-		$saleStart = $this->saleStart( $p );
+		$saleStart = $this->saleStart( $p, $transition );
 		$result    = $this->calculator->forSaleStart( $p->id, $saleStart );
 		if ( null === $result->amount ) {
 			if ( 'regular' === $this->settings->get( 'history.omnibus_fallback', 'regular' ) && is_numeric( $p->regular ) && (float) $p->regular > 0 ) {
@@ -51,12 +51,19 @@ class OmnibusStateUpdater {
 		$this->store( $p->id, $result->amount, $saleStart, $result->source );
 	}
 
-	private function saleStart( ProductSnapshot $p ): DateTimeImmutable {
-		$now = $this->clock->now();
-		if ( $p->saleFrom instanceof DateTimeImmutable && $p->saleFrom < $now ) {
+	/**
+	 * Start of the reduction the reference belongs to. A raised sale price starts a new window at the
+	 * moment of the raise. Otherwise a past WooCommerce schedule date, else the time the transition
+	 * was recorded – the very same instant as the new price row, so that row is never inside the
+	 * window (taking a second "now" here let the new sale price count as its own 30-day low).
+	 */
+	private function saleStart( ProductSnapshot $p, string $transition ): DateTimeImmutable {
+		$now      = $this->clock->now();
+		$recorded = $this->calculator->lastRecordedAt( $p->id );
+		if ( Transition::SALE_RAISED !== $transition && $p->saleFrom instanceof DateTimeImmutable && $p->saleFrom < $now ) {
 			return $p->saleFrom->setTimezone( new DateTimeZone( 'UTC' ) );
 		}
-		return $now;
+		return ( $recorded && $recorded <= $now ) ? $recorded->setTimezone( new DateTimeZone( 'UTC' ) ) : $now;
 	}
 
 	private function store( int $id, float $amount, DateTimeImmutable $saleStart, string $source ): void {

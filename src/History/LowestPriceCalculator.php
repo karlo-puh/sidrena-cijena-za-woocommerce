@@ -17,6 +17,11 @@ class LowestPriceCalculator {
 
 	public function __construct( private readonly PriceHistoryRepository $repo ) {}
 
+	/** When the latest price row was recorded, i.e. the moment of the transition just recorded. */
+	public function lastRecordedAt( int $productId ): ?DateTimeImmutable {
+		return $this->repo->latestFor( $productId )?->recordedAt;
+	}
+
 	public function forSaleStart( int $productId, DateTimeImmutable $saleStart ): LowestResult {
 		$from   = $saleStart->modify( '-' . self::WINDOW_DAYS . ' days' );
 		$lowest = $this->repo->lowestActiveBetween( $productId, $from, $saleStart );

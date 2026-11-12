@@ -23,6 +23,7 @@ final class OmnibusStateUpdaterTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->calc = \Mockery::mock( LowestPriceCalculator::class );
+		$this->calc->shouldReceive( 'lastRecordedAt' )->andReturn( null )->byDefault();
 	}
 
 	private function updater( string $fallback = 'regular' ): OmnibusStateUpdater {
@@ -47,6 +48,25 @@ final class OmnibusStateUpdaterTest extends TestCase {
 		$this->calc->shouldReceive( 'forSaleStart' )->once()->withArgs( fn( int $id, DateTimeImmutable $start ) => '2026-09-30 00:00:00' === $start->format( 'Y-m-d H:i:s' ) )->andReturn( new LowestResult( 12.0, LowestResult::HISTORY ) );
 		Functions\expect( 'update_post_meta' )->times( 3 );
 		$this->updater()->apply( $this->snap( [ 'saleFrom' => $from ] ), Transition::SALE_STARTED );
+	}
+
+	public function test_sale_start_is_the_recorded_transition_time_not_a_later_now(): void {
+		// The new sale row was recorded at 09:59:59; the updater runs a second later. The window must
+		// end at the row's own time, or the new sale price becomes its own 30-day low.
+		$this->calc->shouldReceive( 'lastRecordedAt' )->with( 5 )->andReturn( new DateTimeImmutable( '2026-10-01 09:59:59', new DateTimeZone( 'UTC' ) ) );
+		$this->calc->shouldReceive( 'forSaleStart' )->once()->withArgs( fn( int $id, DateTimeImmutable $start ) => '2026-10-01 09:59:59' === $start->format( 'Y-m-d H:i:s' ) )->andReturn( new LowestResult( 20.0, LowestResult::HISTORY ) );
+		Functions\expect( 'update_post_meta' )->times( 3 );
+		$this->updater()->apply( $this->snap(), Transition::SALE_STARTED );
+	}
+
+	public function test_raised_sale_price_gets_a_new_reference_from_the_raise(): void {
+		$from = new DateTimeImmutable( '2026-06-24 00:00:00', new DateTimeZone( 'UTC' ) );
+		$this->calc->shouldReceive( 'lastRecordedAt' )->with( 5 )->andReturn( new DateTimeImmutable( '2026-10-01 10:00:00', new DateTimeZone( 'UTC' ) ) );
+		$this->calc->shouldReceive( 'forSaleStart' )->once()->withArgs( fn( int $id, DateTimeImmutable $start ) => '2026-10-01 10:00:00' === $start->format( 'Y-m-d H:i:s' ) )->andReturn( new LowestResult( 15.0, LowestResult::HISTORY ) );
+		Functions\expect( 'update_post_meta' )->once()->with( 5, '_scwc_omnibus_ref_price', '15.0000' );
+		Functions\expect( 'update_post_meta' )->twice();
+		$snap = $this->snap( [ 'sale' => '16', 'active' => '16', 'saleFrom' => $from, 'meta' => [ '_scwc_omnibus_ref_price' => '20', '_scwc_omnibus_sale_start' => '2026-06-24 00:00:00' ] ] );
+		$this->updater()->apply( $snap, Transition::SALE_RAISED );
 	}
 
 	public function test_insufficient_history_falls_back_to_regular_price_when_configured(): void {

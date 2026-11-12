@@ -64,7 +64,7 @@ final class RecorderTest extends TestCase {
 		$this->latest( 20.0, null, 20.0, false );
 		self::assertSame( Transition::CHANGED, $this->recorder->record( $this->snap( '22', '', false ), 'save' ) );
 		$this->latest( 20.0, 15.0, 15.0, true );
-		self::assertSame( Transition::CHANGED, $this->recorder->record( $this->snap( '20', '16', true ), 'save' ), 'sale raised = change, not lowered' );
+		self::assertSame( Transition::SALE_RAISED, $this->recorder->record( $this->snap( '20', '16', true ), 'save' ), 'a raised sale price needs a new reference' );
 	}
 
 	public function test_products_without_price_are_ignored(): void {
