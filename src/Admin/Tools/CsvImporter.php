@@ -227,7 +227,7 @@ class CsvImporter {
 		$amount = null;
 		if ( ! $na ) {
 			$amount = Money::parse( $cell( 'amount' ) );
-			if ( null === $amount || $amount <= 0 ) {
+			if ( null === $amount || $amount < 0 ) {
 				$amount   = null;
 				$errors[] = __( 'Neispravan iznos', 'sidrena-cijena-za-woocommerce' );
 			}

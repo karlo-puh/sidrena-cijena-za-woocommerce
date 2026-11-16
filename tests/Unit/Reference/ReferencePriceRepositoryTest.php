@@ -32,9 +32,12 @@ final class ReferencePriceRepositoryTest extends TestCase {
 		self::assertSame( 'snapshot', $ref->source );
 	}
 
-	public function test_missing_zero_or_na_are_not_present(): void {
+	public function test_missing_or_na_are_not_present_but_zero_is(): void {
 		self::assertFalse( $this->repo()->get( $this->anchor, ProductSnapshot::fromArray( [ 'id' => 1 ] ) )->isPresent() );
-		self::assertFalse( $this->repo()->get( $this->anchor, ProductSnapshot::fromArray( [ 'id' => 1, 'meta' => [ '_scwc_ref_anchor_price' => '0' ] ] ) )->isPresent() );
+		$free = $this->repo()->get( $this->anchor, ProductSnapshot::fromArray( [ 'id' => 1, 'meta' => [ '_scwc_ref_anchor_price' => '0' ] ] ) );
+		self::assertTrue( $free->isPresent(), 'a free product\'s anchor is 0 €' );
+		self::assertSame( '0', $free->amount );
+		self::assertFalse( $this->repo()->get( $this->anchor, ProductSnapshot::fromArray( [ 'id' => 1, 'meta' => [ '_scwc_ref_anchor_price' => '0', '_scwc_ref_anchor_na' => '1' ] ] ) )->isPresent(), '"na" still wins' );
 		$na = $this->repo()->get( $this->anchor, ProductSnapshot::fromArray( [ 'id' => 1, 'meta' => [ '_scwc_ref_anchor_price' => '9', '_scwc_ref_anchor_na' => '1' ] ] ) );
 		self::assertFalse( $na->isPresent() );
 		self::assertTrue( $na->na );

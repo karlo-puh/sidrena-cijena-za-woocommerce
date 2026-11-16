@@ -60,6 +60,23 @@ final class BadgeDataFactoryTest extends TestCase {
 		self::assertSame( 12.99, $d->currentDisplay );
 	}
 
+	public function test_free_product_shows_a_zero_anchor(): void {
+		$d = $this->factory()->forProduct( $this->product( [ 'id' => 1, 'regular_price' => '0', 'meta' => [ '_scwc_ref_anchor_price' => '0' ] ] ), BadgeContext::SINGLE );
+		self::assertInstanceOf( BadgeData::class, $d );
+		self::assertSame( 0.0, $d->references[0]->amount );
+		self::assertStringContainsString( '0,00', $d->references[0]->amountHtml );
+	}
+
+	public function test_variable_range_includes_a_free_variation(): void {
+		$this->product( [ 'id' => 21, 'type' => 'variation', 'parent_id' => 20, 'regular_price' => '0', 'meta' => [ '_scwc_ref_anchor_price' => '0' ] ] );
+		$this->product( [ 'id' => 22, 'type' => 'variation', 'parent_id' => 20, 'regular_price' => '20', 'meta' => [ '_scwc_ref_anchor_price' => '20' ] ] );
+		$parent = $this->product( [ 'id' => 20, 'type' => 'variable', 'children' => [ 21, 22 ] ] );
+		$ref    = $this->factory()->forProduct( $parent, BadgeContext::LOOP )->references[0];
+		self::assertTrue( $ref->isRange );
+		self::assertSame( 0.0, $ref->amount );
+		self::assertSame( 20.0, $ref->amountMax );
+	}
+
 	public function test_returns_null_when_nothing_to_show(): void {
 		self::assertNull( $this->factory()->forProduct( $this->product( [ 'id' => 1, 'regular_price' => '5' ] ), BadgeContext::LOOP ) );
 		self::assertNull( $this->factory()->forProduct( $this->product( [ 'id' => 1, 'regular_price' => '5', 'meta' => [ '_scwc_ref_anchor_price' => '4', '_scwc_ref_anchor_na' => '1' ] ] ), BadgeContext::LOOP ) );

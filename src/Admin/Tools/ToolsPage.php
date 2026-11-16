@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SidrenaCijena\Admin\Tools;
 
+use SidrenaCijena\Product\ZeroPriceProducts;
 use SidrenaCijena\Reference\ReferencePriceRegistry;
 use SidrenaCijena\Settings\Settings;
 
@@ -21,6 +22,7 @@ class ToolsPage {
 		private readonly Settings $settings,
 		private readonly ReferencePriceRegistry $registry,
 		private readonly string $templateDir = SCWC_PLUGIN_DIR . 'templates',
+		private readonly ?ZeroPriceProducts $zeroPrice = null,
 	) {}
 
 	public function register(): void {
@@ -83,9 +85,10 @@ class ToolsPage {
 		if ( ! current_user_can( ToolsAjax::CAPABILITY ) ) {
 			wp_die( esc_html__( 'Nemate dopuštenje za pristup ovoj stranici.', 'sidrena-cijena-za-woocommerce' ) );
 		}
-		$types    = $this->registry->enabled();
-		$settings = $this->settings;
-		$template = CsvImporter::template( $this->registry );
+		$types     = $this->registry->enabled();
+		$settings  = $this->settings;
+		$template  = CsvImporter::template( $this->registry );
+		$zeroPrice = $this->zeroPrice ? $this->zeroPrice->count() : 0;
 		include $this->templateDir . '/admin/tools.php';
 	}
 }

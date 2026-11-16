@@ -52,12 +52,14 @@ final class Money {
 	}
 
 	/**
+	 * A usable price: numeric and not negative (0 € is a free product's price).
+	 *
 	 * @param string|int|float|null $value Raw value.
 	 */
-	public static function isPositive( $value ): bool {
+	public static function isNonNegative( $value ): bool {
 		if ( null === $value || '' === $value ) {
 			return false;
 		}
-		return is_numeric( $value ) && (float) $value > 0;
+		return is_numeric( $value ) && (float) $value >= 0;
 	}
 }

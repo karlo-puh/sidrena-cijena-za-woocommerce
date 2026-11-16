@@ -91,12 +91,12 @@ final class CsvImporterTest extends TestCase {
 		self::assertNotNull( $preview->rows[1]->error );
 	}
 
-	public function test_na_rows_need_no_amount_and_non_positive_amounts_fail(): void {
+	public function test_na_rows_need_no_amount_zero_is_free_and_negative_amounts_fail(): void {
 		$preview = $this->importer()->parse( "sku;cijena;na\nA-1;;da\nB-2;0;\nA-1;-5;0\n" );
 		self::assertTrue( $preview->rows[0]->na );
 		self::assertNull( $preview->rows[0]->error );
-		self::assertSame( 1, $preview->valid );
-		self::assertStringContainsString( 'Neispravan iznos', (string) $preview->rows[1]->error );
+		self::assertNull( $preview->rows[1]->error, 'a free product\'s anchor is 0 €' );
+		self::assertSame( 2, $preview->valid );
 		self::assertStringContainsString( 'Neispravan iznos', (string) $preview->rows[2]->error );
 	}
 

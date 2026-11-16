@@ -26,6 +26,6 @@ final class ReferencePrice {
 	}
 
 	public function isPresent(): bool {
-		return ! $this->na && null !== $this->amount && is_numeric( $this->amount ) && (float) $this->amount > 0;
+		return ! $this->na && null !== $this->amount && is_numeric( $this->amount ) && (float) $this->amount >= 0; // 0 € is the anchor of a free product.
 	}
 }

@@ -24,6 +24,8 @@ final class Environment {
 		public readonly string $wcVersion,
 		public readonly string $screenId,
 		public readonly array $dismissed,
+		public readonly int $zeroPriceProducts = 0,
+		public readonly string $zeroPriceUrl = '',
 	) {}
 
 	public function isWooCommerceScreen(): bool {

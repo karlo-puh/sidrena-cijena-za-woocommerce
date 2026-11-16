@@ -394,13 +394,14 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <h3>Što se s kojim proizvodom događa</h3>
 <table>
   <tr><th style="width:32%">Radnja u dnevniku</th><th>Kada</th></tr>
-  <tr><td>zapisano</td><td>Redovna cijena kopirana kao sidrena; izvor na proizvodu: „snapshot”.</td></tr>
+  <tr><td>zapisano</td><td>Redovna cijena kopirana kao sidrena; izvor na proizvodu: „snapshot”. Redovna cijena 0 € (besplatan proizvod) zapisuje se kao sidrena cijena 0 €.</td></tr>
   <tr><td>preskočeno – već postoji</td><td>Način „Samo nedostajuće” i proizvod već ima sidrenu cijenu ili oznaku „nema referentne cijene”.</td></tr>
   <tr><td>označeno – bez referentne cijene</td><td>Proizvod je kreiran <em>nakon</em> referentnog datuma (po datumu kreiranja u WooCommerceu) i postavka „Automatski ‚nema referentne cijene’ za nove proizvode” je uključena. Na proizvodu se postavlja kvačica „Nema referentne cijene”; kupac vidi samo aktualnu cijenu.</td></tr>
-  <tr><td>preskočeno – bez cijene</td><td>Proizvod nema redovnu cijenu (prazna ili 0). Ništa se ne zapisuje.</td></tr>
+  <tr><td>preskočeno – bez cijene</td><td>Proizvod nema redovnu cijenu (prazno polje). Ništa se ne zapisuje.</td></tr>
   <tr><td>preskočeno – na akciji</td><td>Uključena opcija „Preskoči proizvode koji su trenutno na akciji”.</td></tr>
 </table>
 <p>Alat obrađuje jednostavne proizvode, varijacije i vanjske (affiliate) proizvode. Varijabilni i grupirani „roditelji” se preskaču – sidrena cijena pripada svakoj varijaciji.</p>
+<p><strong>Proizvodi s cijenom 0 €.</strong> Besplatan proizvod (npr. PDF) ima sidrenu cijenu 0 € kao i svaki drugi proizvod svoju redovnu cijenu; kupac vidi „Cijena na dan …: 0,00 €”. No 0 € je i ono što ostaje kad se cijena zaboravi upisati. Zato alat iznad obrasca prikazuje broj objavljenih proizvoda s redovnom cijenom 0 € i poveznicu „Pregledajte ih” na popis tih proizvoda – prije snimanja provjerite da su namjerno besplatni. Ista provjera pojavljuje se kao obavijest koju možete sakriti; poveznica u alatu ostaje.</p>
 
 <h2 id="ch4-2">4.2 Uvoz iz CSV-a</h2>
 <p>Tekst na stranici: „Stupci: sku (šifra), cijena, datum (GGGG-MM-DD, neobavezno), tip (neobavezno), na (1 = bez referentne cijene). Decimalni zarez je dopušten. Razdjelnik se prepoznaje automatski.” Poveznica <strong>„Preuzmi predložak”</strong> preuzima datoteku <code>sidrene-cijene-predlozak.csv</code>.</p>
@@ -447,7 +448,7 @@ ABC-003;;;anchor</pre>
   <tr><td>Datoteka je prazna.</td><td>Datoteka nema ni zaglavlje.</td></tr>
   <tr><td>Nedostaje obavezni stupac: sku / šifra, cijena / price</td><td>Zaglavlje ne sadrži prepoznat naziv stupca. Provjerite prvi redak i razdjelnik.</td></tr>
   <tr><td>Redak N: Nedostaje šifra (SKU)</td><td>Prazna ćelija šifre.</td></tr>
-  <tr><td>Redak N: Neispravan iznos</td><td>Iznos prazan, nije broj ili je ≤ 0.</td></tr>
+  <tr><td>Redak N: Neispravan iznos</td><td>Iznos prazan, nije broj ili je negativan (0 je dopušteno za besplatne proizvode).</td></tr>
   <tr><td>Redak N: Neispravan datum</td><td>Datum nije u obliku GGGG-MM-DD.</td></tr>
   <tr><td>Redak N: Nepoznata vrsta referentne cijene: xyz</td><td>Stupac „tip” sadrži nešto osim <code>anchor</code>/<code>base</code>.</td></tr>
   <tr><td>Redak N: Proizvod s tom šifrom ne postoji</td><td>SKU nije pronađen u WooCommerceu. Provjerite razmake, velika/mala slova i je li šifra na varijaciji, a ne na roditelju.</td></tr>

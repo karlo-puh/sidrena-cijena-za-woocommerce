@@ -43,6 +43,14 @@ final class FakeWpdb {
 		return array_shift( $this->varResults );
 	}
 
+	/** @var array<int,array<int,mixed>> */
+	public array $colResults = [];
+
+	public function get_col( string $query ) {
+		$this->queries[] = $query;
+		return array_shift( $this->colResults ) ?? [];
+	}
+
 	public function get_row( string $query, $output = ARRAY_A ) {
 		$this->queries[] = $query;
 		return array_shift( $this->rowResults );

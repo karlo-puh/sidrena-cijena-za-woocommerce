@@ -71,6 +71,18 @@ final class ToolsPageTest extends TestCase {
 		self::assertStringContainsString( 'value="2026-09-10"', $html );
 		self::assertStringContainsString( 'data:text/csv', $html );
 		self::assertStringContainsString( '<progress', $html );
+		self::assertStringNotContainsString( 'scwc_price=zero', $html, 'no 0 € line when there are none' );
+	}
+
+	public function test_render_links_zero_priced_products(): void {
+		$GLOBALS['scwc_test_transients'][ \SidrenaCijena\Product\ZeroPriceProducts::TRANSIENT ] = [ 3, 4 ];
+		$page = new ToolsPage( $this->settings, ReferencePriceRegistry::fromSettings( $this->settings ), dirname( __DIR__, 4 ) . '/templates', new \SidrenaCijena\Product\ZeroPriceProducts( new \SidrenaCijena\Tests\Support\FakeWpdb() ) );
+		ob_start();
+		$page->render();
+		$html = (string) ob_get_clean();
+		unset( $GLOBALS['scwc_test_transients'][ \SidrenaCijena\Product\ZeroPriceProducts::TRANSIENT ] );
+		self::assertStringContainsString( 'Objavljeni proizvodi s redovnom cijenom 0 €: 2. Snimanje im zapisuje sidrenu cijenu 0 €', $html );
+		self::assertStringContainsString( 'href="https://example.hr/wp-admin/edit.php?post_type=product&scwc_price=zero"', $html );
 	}
 
 	public function test_render_requires_capability(): void {

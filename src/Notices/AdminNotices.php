@@ -148,6 +148,19 @@ final class AdminNotices {
 					true
 				);
 			}
+			if ( $env->zeroPriceProducts > 0 ) {
+				$notices[] = $this->notice(
+					'zero_price',
+					'info',
+					sprintf(
+					/* translators: 1: count, 2: products list URL */
+						__( 'Sidrena cijena: objavljeni proizvodi s redovnom cijenom 0 € (proizvod ili neka njegova varijacija): <strong>%1$d</strong>. Snimanje cijena zapisuje im sidrenu cijenu 0 €. Ako nisu namjerno besplatni (npr. PDF), <a href="%2$s">pregledajte ih</a> i prvo unesite cijenu.', 'sidrena-cijena-za-woocommerce' ),
+						$env->zeroPriceProducts,
+						esc_url( $env->zeroPriceUrl )
+					),
+					true
+				);
+			}
 			if ( $env->blockCart ) {
 				$notices[] = $this->notice( 'block_cart', 'info', __( 'Sidrena cijena: koristite blokovsku košaricu/blagajnu. Sidrena cijena tamo se prikazuje kao dodatni redak podataka stavke; puni prikaz oznake u blokovima stiže u sljedećoj verziji.', 'sidrena-cijena-za-woocommerce' ), true );
 			}

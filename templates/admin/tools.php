@@ -6,6 +6,7 @@
  * @var array<string,\SidrenaCijena\Reference\ReferencePriceType> $types    Enabled reference-price types.
  * @var \SidrenaCijena\Settings\Settings                          $settings Plugin settings.
  * @var string                                                    $template Sample CSV for download.
+ * @var int                                                       $zeroPrice Published products with a regular price of 0 €.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -26,6 +27,18 @@ $scwc_template_href = 'data:text/csv;charset=utf-8,' . rawurlencode( "\xEF\xBB\x
 		<p>
 			<?php esc_html_e( 'Sidrena cijena je REDOVNA cijena proizvoda na dan 10. 9. 2026. Alat kopira trenutnu redovnu cijenu svakog proizvoda i varijacije u odabranu vrstu referentne cijene. Akcijske (snižene) cijene se nikada ne kopiraju.', 'sidrena-cijena-za-woocommerce' ); ?>
 		</p>
+		<?php if ( $zeroPrice > 0 ) : ?>
+			<p class="description">
+				<?php
+				printf(
+					/* translators: 1: number of products, 2: products list URL */
+					wp_kses_post( __( 'Objavljeni proizvodi s redovnom cijenom 0 €: %1$d. Snimanje im zapisuje sidrenu cijenu 0 € – ako nisu namjerno besplatni, <a href="%2$s">pregledajte ih</a> i prvo unesite cijenu.', 'sidrena-cijena-za-woocommerce' ) ),
+					(int) $zeroPrice,
+					esc_url( \SidrenaCijena\Product\ZeroPriceProducts::listUrl() )
+				);
+				?>
+			</p>
+		<?php endif; ?>
 		<form id="scwc-snapshot-form" data-type-dates="<?php echo esc_attr( (string) wp_json_encode( $scwc_type_dates ) ); ?>">
 			<table class="form-table" role="presentation">
 				<tr>

@@ -27,10 +27,12 @@ final class MoneyTest extends TestCase {
 		self::assertSame( '0.10', Money::toDecimal( 0.1 ) );
 	}
 
-	public function test_is_positive_amount(): void {
-		self::assertTrue( Money::isPositive( '0.01' ) );
-		self::assertFalse( Money::isPositive( '0' ) );
-		self::assertFalse( Money::isPositive( '' ) );
-		self::assertFalse( Money::isPositive( null ) );
+	public function test_is_non_negative_amount(): void {
+		self::assertTrue( Money::isNonNegative( '0.01' ) );
+		self::assertTrue( Money::isNonNegative( '0' ), 'a free product' );
+		self::assertFalse( Money::isNonNegative( '-1' ) );
+		self::assertFalse( Money::isNonNegative( '' ) );
+		self::assertFalse( Money::isNonNegative( 'abc' ) );
+		self::assertFalse( Money::isNonNegative( null ) );
 	}
 }

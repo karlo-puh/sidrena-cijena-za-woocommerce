@@ -158,14 +158,24 @@ final class SnapshotServiceTest extends TestCase {
 
 	public function test_products_without_regular_price_are_skipped(): void {
 		$this->product( [ 'id' => 1, 'regular_price' => '' ] );
-		$this->product( [ 'id' => 2, 'regular_price' => '0' ] );
 		$this->product( [ 'id' => 3, 'regular_price' => 'abc' ] );
 		Functions\expect( 'update_post_meta' )->never();
 
-		$result = $this->service( [ 1 => [ 1, 2, 3 ] ] )->run( $this->request(), 1, 100 );
+		$result = $this->service( [ 1 => [ 1, 3 ] ] )->run( $this->request(), 1, 100 );
 
-		self::assertSame( 3, $result->skippedNoPrice );
-		self::assertSame( 3, $result->processed );
+		self::assertSame( 2, $result->skippedNoPrice );
+		self::assertSame( 2, $result->processed );
+	}
+
+	public function test_free_product_gets_a_zero_anchor(): void {
+		$this->product( [ 'id' => 2, 'regular_price' => '0' ] );
+		Functions\expect( 'update_post_meta' )->once()->with( 2, '_scwc_ref_anchor_price', '0' );
+		Functions\expect( 'update_post_meta' )->once()->with( 2, '_scwc_ref_anchor_source', 'snapshot' );
+
+		$result = $this->service( [ 1 => [ 2 ] ] )->run( $this->request(), 1, 100 );
+
+		self::assertSame( 1, $result->written );
+		self::assertSame( 0, $result->skippedNoPrice );
 	}
 
 	public function test_dry_run_writes_nothing_but_counts(): void {

@@ -60,6 +60,16 @@ final class AdminNoticesTest extends TestCase {
 		self::assertSame( [ 'permalinks', 'wc_gtin', 'wc_brands' ], $ids );
 	}
 
+	public function test_zero_price_products_get_a_dismissible_info_with_the_filtered_list(): void {
+		$n = $this->notices( null, [ 'zeroPriceProducts' => 7, 'zeroPriceUrl' => 'https://example.hr/wp-admin/edit.php?post_type=product&scwc_price=zero' ] )->collect();
+		self::assertSame( [ 'zero_price' ], array_column( $n, 'id' ) );
+		self::assertSame( 'info', $n[0]['type'] );
+		self::assertTrue( $n[0]['dismissible'] );
+		self::assertStringContainsString( '<strong>7</strong>', $n[0]['message'] );
+		self::assertStringContainsString( 'scwc_price=zero', $n[0]['message'] );
+		self::assertSame( [], $this->notices( null, [ 'zeroPriceProducts' => 7, 'dismissed' => [ 'zero_price' ] ] )->collect() );
+	}
+
 	public function test_disabled_price_list_skips_generation_notices(): void {
 		$settings = ( new Settings( Defaults::all() ) )->with( 'price_list.enabled', false );
 		$n        = ( new AdminNotices( $settings, fn() => $this->env( [ 'nextGeneration' => null, 'lastGeneration' => null ] ), new FixedClock() ) )->collect();

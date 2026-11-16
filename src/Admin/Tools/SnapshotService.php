@@ -122,7 +122,7 @@ class SnapshotService {
 			return SnapshotResult::ACTION_MARKED_NA;
 		}
 
-		if ( ! Money::isPositive( $snapshot->regular ) ) {
+		if ( ! Money::isNonNegative( $snapshot->regular ) ) {
 			return SnapshotResult::ACTION_SKIPPED_NO_PRICE;
 		}
 		if ( $req->skipOnSale && $snapshot->isOnSale ) {

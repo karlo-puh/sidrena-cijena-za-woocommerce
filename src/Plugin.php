@@ -65,6 +65,7 @@ use SidrenaCijena\Product\BrandResolver;
 use SidrenaCijena\Product\ProductAdapter;
 use SidrenaCijena\Product\ProductSnapshot;
 use SidrenaCijena\Product\ServiceRule;
+use SidrenaCijena\Product\ZeroPriceProducts;
 use SidrenaCijena\Reference\CategoryOverrideResolver;
 use SidrenaCijena\Reference\FirstOfferCapture;
 use SidrenaCijena\Reference\MissingReferenceCounter;
@@ -181,6 +182,38 @@ final class Plugin {
 		add_action( 'scwc_snapshot_completed', $flush );
 		add_action( 'scwc_import_completed', $flush );
 		add_action( 'scwc_first_offer_captured', $flush );
+		// The 0 € check: recount when a listed product is saved or a product gets a 0 € price, and when a
+		// product is published, unpublished, trashed or deleted (rare). Not on every save of a big catalogue.
+		$zero      = function (): ZeroPriceProducts {
+			return $this->get( ZeroPriceProducts::class );
+		};
+		$zeroSaved = static function ( $id, $product = null ) use ( $zero ): void {
+			if ( $zero()->affectedBySave( (int) $id, $product ) ) {
+				$zero()->flush();
+			}
+		};
+		add_action( 'woocommerce_update_product', $zeroSaved, 10, 2 );
+		add_action( 'woocommerce_update_product_variation', $zeroSaved, 10, 2 );
+		add_action(
+			'transition_post_status',
+			static function ( $new, $old, $post ) use ( $zero ): void {
+				if ( $new !== $old && ( 'publish' === $new || 'publish' === $old ) && $post instanceof \WP_Post && in_array( $post->post_type, [ 'product', 'product_variation' ], true ) ) {
+					$zero()->flush();
+				}
+			},
+			10,
+			3
+		);
+		add_action(
+			'deleted_post',
+			static function ( $id, $post = null ) use ( $zero ): void {
+				if ( $post instanceof \WP_Post && 'product' === $post->post_type ) {
+					$zero()->flush();
+				}
+			},
+			10,
+			2
+		);
 
 		if ( is_admin() ) {
 			$this->get( SettingsPage::class )->register();
@@ -191,6 +224,7 @@ final class Plugin {
 			$this->get( ToolsAjax::class )->register();
 			$this->get( AdminActions::class )->register();
 			$this->get( AdminNotices::class )->register();
+			$this->get( ZeroPriceProducts::class )->register();
 			add_action(
 				'admin_init',
 				function (): void {
@@ -247,6 +281,13 @@ final class Plugin {
 			static function (): MissingReferenceCounter {
 				global $wpdb;
 				return new MissingReferenceCounter( $wpdb );
+			}
+		);
+		$c->set(
+			ZeroPriceProducts::class,
+			static function (): ZeroPriceProducts {
+				global $wpdb;
+				return new ZeroPriceProducts( $wpdb );
 			}
 		);
 
@@ -401,7 +442,7 @@ final class Plugin {
 		$c->set( CsvImporter::class, static fn( Container $c ) => new CsvImporter( $c->get( ReferencePriceRegistry::class ), $c->get( ReferencePriceRepository::class ) ) );
 		$c->set( CsvExporter::class, static fn( Container $c ) => new CsvExporter( $c->get( ReferencePriceRegistry::class ), $c->get( ReferencePriceRepository::class ), $c->get( ProductAdapter::class ), DailySweep::wcPager(), $c->get( 'product_loader' ) ) );
 		$c->set( ToolsAjax::class, static fn( Container $c ) => new ToolsAjax( $c->get( SnapshotService::class ), $c->get( CsvImporter::class ), $c->get( CsvExporter::class ), $c->get( Settings::class ) ) );
-		$c->set( ToolsPage::class, static fn( Container $c ) => new ToolsPage( $c->get( Settings::class ), $c->get( ReferencePriceRegistry::class ), SCWC_PLUGIN_DIR . 'templates' ) );
+		$c->set( ToolsPage::class, static fn( Container $c ) => new ToolsPage( $c->get( Settings::class ), $c->get( ReferencePriceRegistry::class ), SCWC_PLUGIN_DIR . 'templates', $c->get( ZeroPriceProducts::class ) ) );
 		$c->set( StatusProvider::class, static fn( Container $c ) => new StatusProvider( $c->get( Settings::class ), $c->get( Scheduler::class ), $c->get( Clock::class ) ) );
 		$c->set( SettingsPage::class, static fn( Container $c ) => new SettingsPage( $c->get( Settings::class ), $c->get( ReferencePriceRegistry::class ), new Sanitizer(), $c->get( PriceBadge::class ), $c->get( StatusProvider::class ), null, SCWC_PLUGIN_DIR . 'templates' ) );
 		$c->set( ProductFields::class, static fn( Container $c ) => new ProductFields( $c->get( ReferencePriceRegistry::class ), $c->get( Settings::class ) ) );
@@ -439,6 +480,8 @@ final class Plugin {
 					defined( 'WC_VERSION' ) ? (string) constant( 'WC_VERSION' ) : '0',
 					$screen instanceof \WP_Screen ? (string) $screen->id : '',
 					AdminNotices::dismissedFor( get_current_user_id() ),
+					$c->get( ZeroPriceProducts::class )->count(),
+					ZeroPriceProducts::listUrl(),
 				);
 				},
 				$c->get( Clock::class ),
