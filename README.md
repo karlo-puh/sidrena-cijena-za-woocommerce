@@ -10,6 +10,12 @@ Ovo je fork projekta [Kristijana Biroa](https://github.com/kbiro-nander/sidrena-
 - Postojeći artikli bez sidrene (uključujući ranije stvorene nacrte) ne popunjavaju se današnjom cijenom. Za njih unesite ili uvezite provjerenu početnu cijenu i stvarni datum. Plugin mora biti aktivan tijekom stvaranja i prve objave novih artikala.
 - Početno prijeđite na fork prijenosom ZIP-a iz Releases preko **Dodaci → Dodaj novi → Prenesi dodatak → Zamijeni postojeću verziju**. Ne brišite prethodni plugin. Direktorij i ključevi podataka ostaju isti. Sljedeća ažuriranja dolaze s ovog forka.
 
+### Verzija 1.5.0: najniža cijena u 30 dana kao oblačić (?)
+
+- Nova postavka „Prikaz najniže cijene u 30 dana”. Zadano je „Zaseban redak” (dosadašnji prikaz, bez promjene nakon nadogradnje).
+- „Oblačić (?) uz precrtanu cijenu”: iznad cijene redak „~~najniža cijena u 30 dana~~ −X % (?)”; (?) dodirom ili prelaskom mišem prikazuje najnižu cijenu u 30 dana. Koristi se samo uz stvarno sniženje prema najnižoj cijeni u 30 dana; inače ostaje redak.
+- Predložak se može prilagoditi u temi: `sidrena-cijena/price-tooltip.php`.
+
 ### Verzija 1.4.2: ispravak dodatnog sniženja nakon povišenja
 
 - Dodatno sniženje tijekom akcije zadržava najnižu cijenu u 30 dana samo ako je prethodna akcijska cijena bila stvarno sniženje. Inače (npr. akcija povišena nakon jeftinije akcije pa ponovno snižena) novo sniženje dobiva najnižu cijenu u 30 dana prije sebe, s precrtanom cijenom i postotkom.

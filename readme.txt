@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.4.2
+Stable tag: 1.5.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -106,6 +106,11 @@ Zadano raspon cijena varijacija; precrtana cijena, najniža cijena u 30 dana i p
 Postavka je namijenjena temama koje pri odabiru varijante zamijene glavnu cijenu proizvoda cijenom odabrane varijante (npr. WoodMart). S klasičnim WooCommerce predloškom koji cijenu odabrane varijante prikazuje ispod glavne, i s blokovskim predloškom proizvoda (blok „Product Price”), ostavite raspon.
 
 == Changelog ==
+
+= 1.5.0 =
+* Nova postavka „Prikaz najniže cijene u 30 dana” (zadano: zaseban redak, kao dosad). „Oblačić (?) uz precrtanu cijenu”: iznad cijene redak s precrtanom najnižom cijenom u 30 dana, postotkom (ako je uključen) i (?) koji dodirom ili prelaskom mišem prikazuje najnižu cijenu u 30 dana. Radi s tipkovnicom i čitačima zaslona; dodir na (?) ne otvara proizvod.
+* Oblačić se koristi samo kad je precrtana cijena najniža cijena u 30 dana; inače ostaje zaseban redak.
+* Predložak oblačića može se prilagoditi u temi (sidrena-cijena/price-tooltip.php).
 
 = 1.4.2 =
 * Ispravak: dodatno sniženje tijekom akcije zadržava najnižu cijenu u 30 dana samo ako je prethodna akcijska cijena bila stvarno sniženje. Ako nije (npr. akcijska cijena povišena nakon jeftinije akcije), novo sniženje je prvo stvarno sniženje: dobiva najnižu cijenu u 30 dana prije sebe i prikazuje precrtanu cijenu i postotak.
