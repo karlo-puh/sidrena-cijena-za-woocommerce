@@ -47,6 +47,41 @@ final class PriceHtmlComposerTest extends TestCase {
 		self::assertStringContainsString( 'scwc-lowest30', $html );
 	}
 
+	private function tooltip(): Settings {
+		return ( new Settings( Defaults::all() ) )->with( 'display.omnibus_style', 'tooltip' );
+	}
+
+	public function test_tooltip_follows_the_struck_through_low_and_replaces_its_line(): void {
+		$p    = $this->product( [ 'id' => 1, 'regular_price' => '24.90', 'sale_price' => '22.41' ] );
+		$data = new BadgeData( 1, [ $this->anchor() ], new OmnibusView( 24.90, '<span class="amount">24,90 €</span>', 10, 'history', '24,90 €' ), true, 22.41, 24.90 );
+		$wc   = '<del aria-hidden="true"><span class="amount">24,90 €</span></del> <ins><span class="amount">22,41 €</span></ins>';
+		$html = $this->composer( $this->tooltip() )->compose( $wc, $p, $data, BadgeContext::LOOP );
+		self::assertStringStartsWith( '<span class="scwc-price"><span class="scwc-was"><del aria-hidden="true"><span class="woocommerce-Price-amount amount">24,90&nbsp;€</span></del><span class="screen-reader-text">Izvorna cijena bila je: 24,90&nbsp;€.</span> <span class="scwc-discount">', $html, 'row: struck 30-day low, −X %, (?) – also when the low equals the regular price' );
+		self::assertMatchesRegularExpression( '#<span class="scwc-info".*?</span></span></span> <ins aria-hidden="true"><span class="woocommerce-Price-amount amount">22,41&nbsp;€</span></ins><span class="screen-reader-text">Trenutna cijena je: 22,41&nbsp;€.</span></span>#s', $html, 'then the price on its own line' );
+		self::assertStringContainsString( 'aria-label="Najniža cijena u 30 dana prije sniženja: 24,90 €"', $html );
+		self::assertStringContainsString( 'role="tooltip">Najniža cijena u 30 dana prije sniženja: <strong><span class="amount">24,90 €</span></strong>', $html );
+		self::assertStringNotContainsString( 'scwc-lowest30', $html, 'no separate line' );
+		self::assertStringContainsString( 'scwc-ref-price--anchor', $html, '"Cijena na dan" stays a line' );
+		self::assertStringContainsString( 'scwc-lowest30', $this->composer()->compose( $wc, $p, $data, BadgeContext::LOOP ), 'default stays a line' );
+	}
+
+	public function test_tooltip_falls_back_to_the_line_without_a_struck_through_low(): void {
+		$p  = $this->product( [ 'id' => 1, 'regular_price' => '100', 'sale_price' => '90' ] );
+		$wc = '<del aria-hidden="true"><span class="amount">100,00 €</span></del> <ins><span class="amount">90,00 €</span></ins>';
+		// No real reduction against the 30-day low: no struck-through price to explain.
+		$html = $this->composer( $this->tooltip() )->compose( $wc, $p, new BadgeData( 1, [], new OmnibusView( 90.0, '90,00 €', null, 'history' ), true, 90.0, 100.0 ), BadgeContext::SINGLE );
+		self::assertStringNotContainsString( 'scwc-info', $html );
+		self::assertStringContainsString( 'scwc-lowest30', $html );
+		// The strikethrough is the regular price (replace setting off): a tooltip would explain the wrong number.
+		$off  = $this->tooltip()->with( 'display.omnibus_replace_del', false );
+		$html = $this->composer( $off )->compose( $wc, $p, new BadgeData( 1, [], new OmnibusView( 95.0, '95,00 €', 5, 'history' ), true, 90.0, 100.0 ), BadgeContext::SINGLE );
+		self::assertStringNotContainsString( 'scwc-info', $html );
+		self::assertStringContainsString( 'scwc-lowest30', $html );
+		// Cart-like contexts never get it.
+		$html = $this->composer( $this->tooltip() )->compose( $wc, $p, new BadgeData( 1, [], new OmnibusView( 95.0, '95,00 €', 5, 'history' ), true, 90.0, 100.0 ), BadgeContext::CART );
+		self::assertStringNotContainsString( 'scwc-info', $html );
+	}
+
 	public function test_no_strikethrough_when_lowest_30_is_not_above_current_price(): void {
 		$p  = $this->product(
 			[

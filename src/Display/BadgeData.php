@@ -27,6 +27,11 @@ final class BadgeData {
 		return [] !== $this->references || null !== $this->omnibus;
 	}
 
+	/** The same data without the 30-day low (shown elsewhere, e.g. in the tooltip next to the struck-through price). */
+	public function withoutOmnibus(): self {
+		return new self( $this->productId, $this->references, null, $this->isOnSale, $this->currentDisplay, $this->regularDisplay );
+	}
+
 	public function onlyKey( string $key ): self {
 		$refs = array_values( array_filter( $this->references, static fn( ReferenceView $r ) => $r->key === $key ) );
 		return new self( $this->productId, $refs, $this->omnibus, $this->isOnSale, $this->currentDisplay, $this->regularDisplay );

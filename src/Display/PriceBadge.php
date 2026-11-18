@@ -13,7 +13,8 @@ use SidrenaCijena\Settings\Settings;
 
 final class PriceBadge {
 
-	public const TEMPLATE = 'price-badge.php';
+	public const TEMPLATE         = 'price-badge.php';
+	public const TOOLTIP_TEMPLATE = 'price-tooltip.php';
 
 	/** @var callable(string):string */
 	private $locator;
@@ -32,11 +33,8 @@ final class PriceBadge {
 		if ( ! $data->hasContent() ) {
 			return '';
 		}
-		$override = ( $this->locator )( self::TEMPLATE );
-		$file     = ( '' !== $override && is_readable( $override ) ) ? $override : rtrim( $this->templateDir, '/' ) . '/' . self::TEMPLATE;
-
 		$html = $this->include(
-			$file,
+			$this->template( self::TEMPLATE ),
 			[
 				'badge'    => $data,
 				'context'  => $context,
@@ -49,6 +47,32 @@ final class PriceBadge {
 		/** @var string $html */
 		$html = apply_filters( 'scwc_price_badge_html', $html, $data, $context );
 		return $html;
+	}
+
+	/**
+	 * The "(?)" placed right after the struck-through 30-day low: the 30-day low on hover/tap.
+	 */
+	public function renderTooltip( BadgeData $data, string $context ): string {
+		if ( null === $data->omnibus ) {
+			return '';
+		}
+		$html = $this->include(
+			$this->template( self::TOOLTIP_TEMPLATE ),
+			[
+				'badge'   => $data,
+				'context' => $context,
+				'display' => $this->settings->section( 'display' ),
+			]
+		);
+		/** @var string $html */
+		$html = apply_filters( 'scwc_price_tooltip_html', $html, $data, $context );
+		return $html;
+	}
+
+	/** Theme override (yourtheme/sidrena-cijena/<file>) or the plugin's template. */
+	private function template( string $file ): string {
+		$override = ( $this->locator )( $file );
+		return ( '' !== $override && is_readable( $override ) ) ? $override : rtrim( $this->templateDir, '/' ) . '/' . $file;
 	}
 
 	/**

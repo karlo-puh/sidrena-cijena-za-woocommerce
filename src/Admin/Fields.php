@@ -261,6 +261,16 @@ final class Fields {
 					'description' => __( 'Kada je najniža cijena niža od redovne, precrtava se ona (postotak se računa od nje).', 'sidrena-cijena-za-woocommerce' ),
 				],
 				[
+					'path'        => 'display.omnibus_style',
+					'type'        => 'select',
+					'label'       => __( 'Prikaz najniže cijene u 30 dana', 'sidrena-cijena-za-woocommerce' ),
+					'options'     => [
+						'line'    => __( 'Zaseban redak', 'sidrena-cijena-za-woocommerce' ),
+						'tooltip' => __( 'Oblačić (?) uz precrtanu cijenu', 'sidrena-cijena-za-woocommerce' ),
+					],
+					'description' => __( 'Iznad cijene redak: precrtana najniža cijena u 30 dana, postotak (ako je uključen) i (?), koji se otvara prelaskom mišem ili dodirom. Taj prikaz akcijske cijene slaže dodatak, pa se ne primjenjuju izmjene teme ili drugih dodataka na WooCommerceov prikaz akcijske cijene. Koristi se samo kad je precrtana cijena najniža cijena u 30 dana; inače (bez stvarnog sniženja, raspon varijabilnog proizvoda, kratki kod) ostaje zaseban redak.', 'sidrena-cijena-za-woocommerce' ),
+				],
+				[
 					'path'  => 'display.show_percent',
 					'type'  => 'checkbox',
 					'label' => __( 'Prikaži postotak sniženja', 'sidrena-cijena-za-woocommerce' ),
