@@ -10,6 +10,11 @@ Ovo je fork projekta [Kristijana Biroa](https://github.com/kbiro-nander/sidrena-
 - Postojeći artikli bez sidrene (uključujući ranije stvorene nacrte) ne popunjavaju se današnjom cijenom. Za njih unesite ili uvezite provjerenu početnu cijenu i stvarni datum. Plugin mora biti aktivan tijekom stvaranja i prve objave novih artikala.
 - Početno prijeđite na fork prijenosom ZIP-a iz Releases preko **Dodaci → Dodaj novi → Prenesi dodatak → Zamijeni postojeću verziju**. Ne brišite prethodni plugin. Direktorij i ključevi podataka ostaju isti. Sljedeća ažuriranja dolaze s ovog forka.
 
+### Verzija 1.4.2: ispravak dodatnog sniženja nakon povišenja
+
+- Dodatno sniženje tijekom akcije zadržava najnižu cijenu u 30 dana samo ako je prethodna akcijska cijena bila stvarno sniženje. Inače (npr. akcija povišena nakon jeftinije akcije pa ponovno snižena) novo sniženje dobiva najnižu cijenu u 30 dana prije sebe, s precrtanom cijenom i postotkom.
+- Već spremljene vrijednosti ne preračunavaju se automatski.
+
 ### Verzija 1.4.1: besplatni proizvodi imaju sidrenu cijenu 0 €
 
 - Redovna cijena 0 € je i sidrena cijena 0 €: snimanje cijena je zapisuje, CSV uvoz je prihvaća, kupac vidi „Cijena na dan …: 0,00 €”, a cjenik izvozi 0.00. „Nema referentne cijene” ostaje za proizvode koji se na referentni dan nisu prodavali.

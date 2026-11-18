@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -106,6 +106,10 @@ Zadano raspon cijena varijacija; precrtana cijena, najniža cijena u 30 dana i p
 Postavka je namijenjena temama koje pri odabiru varijante zamijene glavnu cijenu proizvoda cijenom odabrane varijante (npr. WoodMart). S klasičnim WooCommerce predloškom koji cijenu odabrane varijante prikazuje ispod glavne, i s blokovskim predloškom proizvoda (blok „Product Price”), ostavite raspon.
 
 == Changelog ==
+
+= 1.4.2 =
+* Ispravak: dodatno sniženje tijekom akcije zadržava najnižu cijenu u 30 dana samo ako je prethodna akcijska cijena bila stvarno sniženje. Ako nije (npr. akcijska cijena povišena nakon jeftinije akcije), novo sniženje je prvo stvarno sniženje: dobiva najnižu cijenu u 30 dana prije sebe i prikazuje precrtanu cijenu i postotak.
+* Već spremljene vrijednosti ne preračunavaju se automatski.
 
 = 1.4.1 =
 * Besplatni proizvodi: redovna cijena 0 € je i sidrena cijena 0 € – snimanje cijena je zapisuje, CSV uvoz je prihvaća, a kupac vidi „Cijena na dan …: 0,00 €” (cjenik: 0.00). „Nema referentne cijene” ostaje za proizvode koji se na referentni dan nisu prodavali.
