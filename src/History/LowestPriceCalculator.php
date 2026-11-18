@@ -22,6 +22,12 @@ class LowestPriceCalculator {
 		return $this->repo->latestFor( $productId )?->recordedAt;
 	}
 
+	/** The active price of the row before the latest one, i.e. the price just replaced by the transition. */
+	public function previousActive( int $productId ): ?float {
+		$rows = $this->repo->historyFor( $productId, 2 );
+		return isset( $rows[1] ) ? $rows[1]->active : null;
+	}
+
 	public function forSaleStart( int $productId, DateTimeImmutable $saleStart ): LowestResult {
 		$from   = $saleStart->modify( '-' . self::WINDOW_DAYS . ' days' );
 		$lowest = $this->repo->lowestActiveBetween( $productId, $from, $saleStart );

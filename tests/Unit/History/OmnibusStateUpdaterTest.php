@@ -24,6 +24,7 @@ final class OmnibusStateUpdaterTest extends TestCase {
 		parent::setUp();
 		$this->calc = \Mockery::mock( LowestPriceCalculator::class );
 		$this->calc->shouldReceive( 'lastRecordedAt' )->andReturn( null )->byDefault();
+		$this->calc->shouldReceive( 'previousActive' )->andReturn( null )->byDefault();
 	}
 
 	private function updater( string $fallback = 'regular' ): OmnibusStateUpdater {
@@ -84,9 +85,26 @@ final class OmnibusStateUpdaterTest extends TestCase {
 	}
 
 	public function test_progressive_reduction_keeps_existing_reference(): void {
+		// 15 → 13 was a real reduction against the 30-day low 15; cutting further to 12 keeps 15.
+		$this->calc->shouldReceive( 'previousActive' )->andReturn( 13.0 );
 		$this->calc->shouldNotReceive( 'forSaleStart' );
 		Functions\expect( 'update_post_meta' )->never();
 		$this->updater()->apply( $this->snap( [ 'sale' => '12', 'active' => '12', 'meta' => [ '_scwc_omnibus_ref_price' => '15', '_scwc_omnibus_sale_start' => '2026-09-25 00:00:00' ] ] ), Transition::SALE_LOWERED );
+	}
+
+	public function test_cut_after_a_non_reduction_gets_a_fresh_reference_from_the_cut(): void {
+		// 401 (earlier offer) → 641.60 (raised: no reduction, 30-day low 401) → 481.20 now: the first real
+		// reduction. Its 30-day low is taken before the cut (641.60), not kept at 401.
+		$this->calc->shouldReceive( 'previousActive' )->andReturn( 641.6 );
+		$this->calc->shouldReceive( 'lastRecordedAt' )->andReturn( new \DateTimeImmutable( '2026-09-30 07:36:25', new \DateTimeZone( 'UTC' ) ) );
+		$this->calc->shouldReceive( 'forSaleStart' )->once()->withArgs( fn( $id, $start ) => '2026-09-30 07:36:25' === $start->format( 'Y-m-d H:i:s' ) )->andReturn( new LowestResult( 641.6, LowestResult::HISTORY ) );
+		Functions\expect( 'update_post_meta' )->once()->with( 5, '_scwc_omnibus_ref_price', '641.6000' );
+		Functions\expect( 'update_post_meta' )->once()->with( 5, '_scwc_omnibus_sale_start', '2026-09-30 07:36:25' );
+		Functions\expect( 'update_post_meta' )->once()->with( 5, '_scwc_omnibus_ref_source', LowestResult::HISTORY );
+		$this->updater()->apply(
+			$this->snap( [ 'regular' => '802', 'sale' => '481.20', 'active' => '481.20', 'saleFrom' => new \DateTimeImmutable( '2026-09-14 00:00:00', new \DateTimeZone( 'UTC' ) ), 'meta' => [ '_scwc_omnibus_ref_price' => '401.0000', '_scwc_omnibus_sale_start' => '2026-09-14 04:04:52' ] ] ),
+			Transition::SALE_LOWERED
+		);
 	}
 
 	public function test_on_sale_with_missing_meta_self_heals_on_any_transition(): void {

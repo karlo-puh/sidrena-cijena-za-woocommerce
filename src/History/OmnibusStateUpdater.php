@@ -35,10 +35,13 @@ class OmnibusStateUpdater {
 			return;
 		}
 		$fresh = in_array( $transition, [ Transition::SALE_STARTED, Transition::SALE_RAISED, Transition::FIRST ], true );
-		if ( ! $fresh && $hasMeta ) {
+		// A cut after a sale price that was no reduction against its 30-day low (e.g. raised after a cheaper
+		// offer) is the first real reduction: it gets the 30-day low before it, from the moment of the cut.
+		$newReduction = Transition::SALE_LOWERED === $transition && $hasMeta && ! $this->previousWasReduction( $p );
+		if ( ! $fresh && ! $newReduction && $hasMeta ) {
 			return; // Progressive reductions keep the original reference.
 		}
-		$saleStart = $this->saleStart( $p, $transition );
+		$saleStart = $this->saleStart( $p, $newReduction ? Transition::SALE_RAISED : $transition );
 		$result    = $this->calculator->forSaleStart( $p->id, $saleStart );
 		if ( null === $result->amount ) {
 			if ( 'regular' === $this->settings->get( 'history.omnibus_fallback', 'regular' ) && is_numeric( $p->regular ) && (float) $p->regular > 0 ) {
@@ -49,6 +52,13 @@ class OmnibusStateUpdater {
 			return;
 		}
 		$this->store( $p->id, $result->amount, $saleStart, $result->source );
+	}
+
+	/** Whether the sale price just replaced was a real reduction against the stored 30-day low. */
+	private function previousWasReduction( ProductSnapshot $p ): bool {
+		$previous = $this->calculator->previousActive( $p->id );
+		$ref      = (string) $p->meta( MetaKeys::OMNIBUS_REF_PRICE );
+		return null === $previous || ! is_numeric( $ref ) || round( (float) $ref, 2 ) > round( $previous, 2 );
 	}
 
 	/**
