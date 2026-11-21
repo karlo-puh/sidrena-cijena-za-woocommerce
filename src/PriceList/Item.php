@@ -1,6 +1,6 @@
 <?php
 /**
- * Value object: one product row of the price list.
+ * One goods row of the price list, in the order of Pravilnik o načinu objave cjenika proizvoda (NN 132/2026), čl. 3(2).
  *
  * @package SidrenaCijena
  */
@@ -11,22 +11,18 @@ namespace SidrenaCijena\PriceList;
 
 final class Item {
 
-	/**
-	 * @param array<string,array{amount:?float,date:?string}> $references Reference prices keyed by type key.
-	 */
 	public function __construct(
+		public readonly int $productId,
 		public readonly string $name,
 		public readonly string $sku,
 		public readonly string $brand,
+		public readonly ?float $netQuantity,
 		public readonly string $unit,
-		public readonly ?float $unitPrice,
 		public readonly float $price,
 		public readonly bool $isSpecialSale,
-		public readonly string $saleName,
-		public readonly array $references,
-		public readonly ?float $lowest30,
+		public readonly ?float $unitPrice,
 		public readonly string $barcode,
-		public readonly bool $available,
-		public readonly string $url,
+		public readonly string $ean,
+		public readonly ?float $basePrice,
 	) {}
 }

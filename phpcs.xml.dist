@@ -29,6 +29,7 @@
         <exclude-pattern>src/History/Schema\.php</exclude-pattern>
         <exclude-pattern>src/Reference/MissingReferenceCounter\.php</exclude-pattern>
         <exclude-pattern>src/Product/ZeroPriceProducts\.php</exclude-pattern>
+        <exclude-pattern>src/PriceList/ChangeTracker\.php</exclude-pattern>
         <exclude-pattern>uninstall\.php</exclude-pattern>
     </rule>
     <rule ref="WordPress.DB.PreparedSQLPlaceholders">

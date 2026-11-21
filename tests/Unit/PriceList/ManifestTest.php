@@ -90,6 +90,48 @@ final class ManifestTest extends TestCase {
 		self::assertSame( [ 'legacy_web1_1_20260930_060000.xml' ], array_column( $m->entriesFor( 'web1', 'web1' ), 'name' ) );
 	}
 
+	/**
+	 * @return array<string,mixed>
+	 */
+	private function v2( string $name, string $kind, string $outlet, int $number, string $utc ): array {
+		return [ 'kind' => $kind, 'outlet' => $outlet, 'number' => $number ] + $this->entry( $name, 'csv', $utc );
+	}
+
+	public function test_latest_by_kind_and_next_number_per_outlet_and_kind(): void {
+		$m = new Manifest( $this->storage );
+		self::assertSame( 1, $m->nextNumber( 'web1', 'roba' ) );
+		$m->add( $this->entry( 'legacy.csv', 'csv', '2026-11-01 04:00:00' ) );
+		$m->add( $this->v2( 'r1.csv', 'roba', 'web1', 1, '2026-11-17 05:00:00' ) );
+		$m->add( $this->v2( 'u1.csv', 'usluge', 'web1', 1, '2026-11-17 05:00:00' ) );
+		$m->add( $this->v2( 'r2.csv', 'roba', 'web1', 2, '2026-11-18 05:00:00' ) );
+		$m->add( $this->v2( 'zg.csv', 'roba', 'zg-02', 5, '2026-11-18 05:00:00' ) );
+		self::assertSame( 'r2.csv', $m->latest( 'csv', 'web1', 'web1', 'roba' )['name'] );
+		self::assertSame( 'u1.csv', $m->latest( 'csv', 'web1', 'web1', 'usluge' )['name'] );
+		self::assertNull( $m->latest( 'csv', 'zg-02', 'web1', 'usluge' ) );
+		self::assertSame( 3, $m->nextNumber( 'web1', 'roba' ) );
+		self::assertSame( 2, $m->nextNumber( 'web1', 'usluge' ) );
+		self::assertSame( 6, $m->nextNumber( 'zg-02', 'roba' ) );
+		self::assertSame( 1, $m->nextNumber( 'zg-02', 'usluge' ) );
+	}
+
+	public function test_current_prefers_goods_then_services_then_the_pre_20_file(): void {
+		$m = new Manifest( $this->storage );
+		$m->add( $this->entry( 'old.xml', 'xml', '2026-11-01 04:00:00' ) );
+		$m->add( $this->entry( 'old.csv', 'csv', '2026-11-01 04:00:00' ) );
+		self::assertSame( 'old.csv', $m->current( 'web1', 'web1', '' )['name'], 'before 2.0: old file of the requested format' );
+		self::assertSame( 'old.xml', $m->current( 'web1', 'web1', '', 'xml' )['name'] );
+		self::assertNull( $m->current( 'web1', 'web1', 'roba' ) );
+		$m->add( $this->v2( 'u1.csv', 'usluge', 'web1', 1, '2026-11-17 05:00:00' ) );
+		self::assertSame( 'u1.csv', $m->current( 'web1', 'web1', '', 'xml' )['name'], 'services-only shop' );
+		$m->add( $this->v2( 'r1.csv', 'roba', 'web1', 1, '2026-11-17 05:00:00' ) );
+		$m->add( $this->v2( 'u2.csv', 'usluge', 'web1', 2, '2026-11-18 05:00:00' ) );
+		self::assertSame( 'r1.csv', $m->current( 'web1', 'web1', '' )['name'] );
+		self::assertSame( 'r1.csv', $m->current( 'web1', 'web1', '', 'xml' )['name'] );
+		self::assertSame( 'r1.csv', $m->current( 'web1', 'web1', 'roba' )['name'] );
+		self::assertSame( 'u2.csv', $m->current( 'web1', 'web1', 'usluge' )['name'] );
+		self::assertNull( $m->current( 'zg-02', 'web1', '' ), 'legacy entries belong to the primary only' );
+	}
+
 	public function test_add_replaces_existing_entry_with_same_name(): void {
 		$m = new Manifest( $this->storage );
 		$m->add( $this->entry( 'a.xml', 'xml', '2026-10-01 04:00:12' ) );

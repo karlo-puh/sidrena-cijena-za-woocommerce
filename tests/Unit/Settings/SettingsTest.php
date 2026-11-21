@@ -16,7 +16,10 @@ final class SettingsTest extends TestCase {
 		self::assertFalse( $s->get( 'reference_prices.base.enabled' ) );
 		self::assertSame( 'cjenik', $s->get( 'price_list.slug' ) );
 		self::assertSame( '06:00', $s->get( 'price_list.generate_time' ) );
-		self::assertSame( 35, $s->get( 'price_list.retention_days' ) );
+		self::assertSame( 15, $s->get( 'price_list.retention_days' ), 'NN 132/2026 čl. 3(6)' );
+		self::assertSame( '', $s->get( 'price_list.seller_id' ) );
+		self::assertFalse( $s->get( 'price_list.shared_list' ) );
+		self::assertNull( $s->get( 'price_list.formats' ) );
 		self::assertTrue( $s->get( 'price_list.include_hidden' ), 'hidden products are still purchasable (NN 101/2026 VI.)' );
 		self::assertTrue( $s->get( 'display.mini_cart' ), 'the mini-cart shows retail prices (NN 101/2026 doc 1212 II.)' );
 		self::assertSame( 'all', $s->get( 'price_list.regenerate_on_change' ), 'real-time retrieval (VII.)' );

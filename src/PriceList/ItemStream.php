@@ -32,13 +32,7 @@ final class ItemStream implements \IteratorAggregate {
 				throw new RuntimeException( 'Incomplete price-list checkpoint.' );
 			}
 			foreach ( $items as $item ) {
-				$json = json_encode(
-					[
-						'service' => $item instanceof ServiceItem,
-						'row'     => get_object_vars( $item ),
-					],
-					JSON_THROW_ON_ERROR
-				) . "\n";
+				$json = self::encode( $item );
 				if ( strlen( $json ) !== fwrite( $fh, $json ) ) {
 					throw new RuntimeException( 'Unable to write price-list rows.' );
 				}
@@ -51,6 +45,23 @@ final class ItemStream implements \IteratorAggregate {
 		} finally {
 			fclose( $fh );
 		}
+	}
+
+	/** One line of the rows file. */
+	public static function encode( Item|ServiceItem $item ): string {
+		return json_encode(
+			[
+				'service' => $item instanceof ServiceItem,
+				'row'     => get_object_vars( $item ),
+			],
+			JSON_THROW_ON_ERROR
+		) . "\n";
+	}
+
+	/** Product ID of one line of the rows file. */
+	public static function idOf( string $line ): int {
+		$data = json_decode( $line, true, 512, JSON_THROW_ON_ERROR );
+		return (int) ( $data['row']['productId'] ?? 0 );
 	}
 
 	/** @return \Generator<int,Item|ServiceItem> */

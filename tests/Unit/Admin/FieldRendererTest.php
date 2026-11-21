@@ -107,7 +107,7 @@ final class FieldRendererTest extends TestCase {
 		self::assertStringContainsString( 'name="scwc_settings[outlets][additional][0][form]" value="poslovnica"', $html );
 		self::assertStringContainsString( 'name="scwc_settings[outlets][additional][0][address]" value="Vukovarska 5"', $html );
 		self::assertStringContainsString( 'name="scwc_settings[outlets][additional][0][label]" value="ZG-02"', $html );
-		self::assertStringContainsString( 'name="scwc_settings[outlets][additional][0][storage_number]" value="3"', $html );
+		self::assertStringNotContainsString( 'storage_number', $html );
 		self::assertStringContainsString( 'Dodaj prodajni objekt', $html );
 		self::assertStringContainsString( '<template', $html );
 		self::assertStringContainsString( '__INDEX__', $html );

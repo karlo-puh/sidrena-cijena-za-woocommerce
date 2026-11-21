@@ -193,7 +193,7 @@ class ToolsAjax {
 		} while ( $hasMore && count( $rows ) <= self::EXPORT_MAX );
 
 		return [
-			'csv'      => CsvExporter::toCsvString( $rows, (string) $this->settings->get( 'price_list.csv_delimiter', ';' ) ),
+			'csv'      => CsvExporter::toCsvString( $rows, ';' ),
 			'filename' => 'sidrene-cijene-' . wp_date( 'Ymd' ) . '.csv',
 			'rows'     => max( 0, count( $rows ) - 1 ),
 		];

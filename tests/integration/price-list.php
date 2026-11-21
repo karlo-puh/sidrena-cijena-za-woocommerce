@@ -20,7 +20,7 @@ $assert = static function ( bool $ok, string $message ): void {
 };
 $phase = $args[0] ?? '';
 if ( 'configure' === $phase ) {
-	$settings = Settings::fromOption()->with( 'outlet.address', 'Test 1' )->with( 'outlet.label', 'WEB' )
+	$settings = Settings::fromOption()->with( 'outlet.address', 'Test 1' )->with( 'outlet.label', 'WEB' )->with( 'price_list.seller_id', '12345678903' )
 		->with( 'price_list.regenerate_on_change', 'never' )
 		->with( 'outlets.additional', [ [ 'address' => 'Test 2', 'label' => 'SHOP' ] ] );
 	update_option( Settings::OPTION, $settings->all() );
@@ -108,30 +108,26 @@ $storage = Storage::fromUploads();
 $manifest = new Manifest( $storage );
 $assert( ! Plugin::instance()->get( Generator::class )->pending(), 'Generation completed across fresh PHP processes.' );
 $files = $manifest->entries();
-$assert( 4 === count( $files ), 'Both formats are published for both outlets.' );
+$assert( 4 === count( $files ), 'Goods and services lists are published for both outlets.' );
 $expected = get_option( 'scwc_test_expected_skus' );
 foreach ( $files as $file ) {
 	$path = $storage->path( $file['name'] );
-	$assert( hash_file( 'sha256', $path ) === $file['sha256'], 'Published checksum matches ' . $file['format'] . '/' . $file['outlet'] );
-	$skus = [];
-	$services = 0;
-	if ( 'xml' === $file['format'] ) {
-		$xml = simplexml_load_file( $path );
-		$assert( false !== $xml, 'XML is well formed.' );
-		foreach ( $xml->Proizvodi->Proizvod as $row ) {
-			$skus[] = (string) $row->Sifra;
-		}
-		$services = count( $xml->Usluge->Usluga );
-	} else {
-		$fh = fopen( $path, 'rb' );
-		fgetcsv( $fh, 0, ';' );
-		while ( false !== ( $row = fgetcsv( $fh, 0, ';' ) ) ) {
-			if ( 'usluga' === $row[0] ) { ++$services; } else { $skus[] = $row[2]; }
-		}
-		fclose( $fh );
+	$assert( hash_file( 'sha256', $path ) === $file['sha256'], 'Published checksum matches ' . $file['kind'] . '/' . $file['outlet'] );
+	$assert( str_starts_with( $file['name'], '12345678903_' ) && 1 === $file['number'], 'File name starts with the OIB; first file has number 1.' );
+	$fh   = fopen( $path, 'rb' );
+	$head = fgetcsv( $fh, 0, ';' );
+	$rows = [];
+	while ( false !== ( $row = fgetcsv( $fh, 0, ';' ) ) ) {
+		$rows[] = $row;
 	}
-	sort( $skus );
-	$assert( $expected === $skus && 2 === $services, 'Exact product IDs and services: no skipped or duplicate rows.' );
+	fclose( $fh );
+	if ( 'roba' === $file['kind'] ) {
+		$skus = array_column( $rows, 1 );
+		sort( $skus );
+		$assert( $expected === $skus, 'Exact goods rows: no skipped or duplicate rows.' );
+	} else {
+		$assert( 'bazna_cijena' === end( $head ) && 2 === count( $rows ), 'Services list has both services.' );
+	}
 }
 $assert( [] === as_get_scheduled_actions( [ 'hook' => Scheduler::HOOK_GENERATE_BATCH, 'status' => 'pending' ], 'ids' ), 'No continuation remains after publication.' );
 $assert( [] === as_get_scheduled_actions( [ 'group' => 'scwc', 'status' => 'failed' ], 'ids' ), 'Actual Action Scheduler reports no failed plugin jobs.' );

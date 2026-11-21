@@ -35,24 +35,24 @@ h2{font-size:1.2em;margin:0 0 4px}
 <main>
 <h1>Cjenik proizvoda i usluga</h1>
 <p><strong><?php echo esc_html( $outlet['merchant_name'] ); ?></strong></p>
-<p><small><?php echo esc_html__( 'Strojno čitljiv cjenik objavljen prema Odluci o objavi cjenika proizvoda i usluga (NN 101/2026). Svaki prodajni objekt ima vlastitu datoteku; datoteke sadrže maloprodajne cijene, sidrene cijene i podatke o posebnim oblicima prodaje. Verzije se čuvaju najmanje 30 dana.', 'sidrena-cijena-za-woocommerce' ); ?></small></p>
+<p><small><?php echo esc_html__( 'Strojno čitljiv cjenik objavljen prema Pravilniku o načinu objave cjenika proizvoda (NN 132/2026). Cjenik robe i cjenik usluga objavljuju se zasebno, pri svakoj promjeni; zamijenjene verzije dostupne su najmanje 15 dana.', 'sidrena-cijena-za-woocommerce' ); ?></small></p>
 <?php foreach ( $outlets as $o ) : ?>
 <section id="<?php echo esc_attr( (string) $o['key'] ); ?>">
 <h2><?php echo esc_html( (string) $o['label'] ); ?></h2>
-<p><?php echo esc_html( (string) $o['form'] ); ?> · <?php echo esc_html( (string) $o['address'] ); ?> · <?php echo esc_html__( 'oznaka', 'sidrena-cijena-za-woocommerce' ); ?>: <?php echo esc_html( (string) $o['label'] ); ?> · <?php echo esc_html__( 'broj pohrane', 'sidrena-cijena-za-woocommerce' ); ?>: <?php echo esc_html( (string) $o['storage_number'] ); ?> · <a href="<?php echo esc_url( (string) $o['url'] ); ?>"><?php echo esc_html__( 'stranica objekta', 'sidrena-cijena-za-woocommerce' ); ?></a></p>
+<p><?php echo esc_html( (string) $o['form'] ); ?> · <?php echo esc_html( (string) $o['address'] ); ?> · <?php echo esc_html__( 'oznaka', 'sidrena-cijena-za-woocommerce' ); ?>: <?php echo esc_html( (string) $o['label'] ); ?> · <a href="<?php echo esc_url( (string) $o['url'] ); ?>"><?php echo esc_html__( 'stranica objekta', 'sidrena-cijena-za-woocommerce' ); ?></a></p>
 <p class="latest">
-	<?php foreach ( (array) $o['latest'] as $format => $url ) : ?>
-	<a href="<?php echo esc_url( (string) $url ); ?>"><?php echo esc_html( sprintf( 'Najnoviji cjenik (%s)', strtoupper( (string) $format ) ) ); ?></a>
+	<?php foreach ( (array) $o['latest'] as $kind => $url ) : ?>
+	<a href="<?php echo esc_url( (string) $url ); ?>"><?php echo esc_html( 'usluge' === $kind ? __( 'Važeći cjenik usluga', 'sidrena-cijena-za-woocommerce' ) : __( 'Važeći cjenik robe', 'sidrena-cijena-za-woocommerce' ) ); ?></a>
 <?php endforeach; ?>
 </p>
 <div class="wrap">
 <table>
-<thead><tr><th><?php echo esc_html__( 'Datoteka', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Format', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Generirano', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Proizvodi', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Usluge', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Veličina', 'sidrena-cijena-za-woocommerce' ); ?></th></tr></thead>
+<thead><tr><th><?php echo esc_html__( 'Datoteka', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Vrsta', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Objavljeno', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Proizvodi', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Usluge', 'sidrena-cijena-za-woocommerce' ); ?></th><th><?php echo esc_html__( 'Veličina', 'sidrena-cijena-za-woocommerce' ); ?></th></tr></thead>
 <tbody>
 	<?php foreach ( (array) $o['files'] as $f ) : ?>
 <tr>
 <td><a href="<?php echo esc_url( (string) $f['url'] ); ?>"><?php echo esc_html( (string) $f['name'] ); ?></a> <small><a href="<?php echo esc_url( (string) $f['direct_url'] ); ?>" title="<?php echo esc_attr__( 'Izravna adresa datoteke (neovisna o postavkama poveznica)', 'sidrena-cijena-za-woocommerce' ); ?>">↗</a></small></td>
-<td><?php echo esc_html( strtoupper( (string) $f['format'] ) ); ?></td>
+<td><?php echo esc_html( '' !== (string) ( $f['kind'] ?? '' ) ? strtoupper( (string) $f['kind'] ) : strtoupper( (string) $f['format'] ) ); ?></td>
 <td><?php echo esc_html( (string) $f['generated_at'] ); ?></td>
 <td><?php echo (int) $f['products']; ?></td>
 <td><?php echo (int) $f['services']; ?></td>

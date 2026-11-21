@@ -10,6 +10,13 @@ Ovo je fork projekta [Kristijana Biroa](https://github.com/kbiro-nander/sidrena-
 - Postojeći artikli bez sidrene (uključujući ranije stvorene nacrte) ne popunjavaju se današnjom cijenom. Za njih unesite ili uvezite provjerenu početnu cijenu i stvarni datum. Plugin mora biti aktivan tijekom stvaranja i prve objave novih artikala.
 - Početno prijeđite na fork prijenosom ZIP-a iz Releases preko **Dodaci → Dodaj novi → Prenesi dodatak → Zamijeni postojeću verziju**. Ne brišite prethodni plugin. Direktorij i ključevi podataka ostaju isti. Sljedeća ažuriranja dolaze s ovog forka.
 
+### Verzija 2.0.0: cjenik prema NN 132/2026
+
+- Samo CSV, zaseban cjenik robe i usluga, propisani stupci i naziv datoteke (OIB/MB, ROBA/USLUGE, broj pohrane, GGGGMMDD_SSMM). Obavezna nova postavka: OIB / matični broj trgovca.
+- Nova datoteka objavljuje se samo kad se cjenik promijeni; pri spremanju proizvoda ponovno se izrađuju samo njegovi redci, a cijeli katalog čita se jednom dnevno. Rok objave promjena je 11:00.
+- Zamijenjene datoteke dostupne su još 15 dana. Adrese `/cjenik/latest_roba.csv`, `/cjenik/latest_usluge.csv`; stare `latest.csv`/`latest.xml` vode na cjenik robe.
+- Snimanje cijena preskače proizvode stvorene nakon referentnog dana (bazna cijena = cijena prve ponude).
+
 ### Verzija 1.5.0: najniža cijena u 30 dana kao oblačić (?)
 
 - Nova postavka „Prikaz najniže cijene u 30 dana”. Zadano je „Zaseban redak” (dosadašnji prikaz, bez promjene nakon nadogradnje).
@@ -62,9 +69,9 @@ WordPress/WooCommerce dodatak koji pomaže hrvatskim webshopovima s prikazom sid
 
 - **sidrena (dodatna) cijena** uz svaku cijenu – redovna cijena koja je vrijedila 10. 9. 2026. (za ranije obuhvaćene FMCG proizvode ostaje 2. 5. 2025.),
 - **najniža cijena u 30 dana prije sniženja** i postotak popusta izračunat iz nje (Zakon o zaštiti potrošača, čl. 19),
-- **strojno čitljiv cjenik (XML/CSV)** na javnoj adresi `/cjenik/` (zadana putanja; mijenja se u postavkama, a stvarna adresa vaše trgovine piše u kartici Cjenik), s propisanim poljima i nazivom datoteke, za robu ažuriran jednom dnevno do 08:00 za tekući radni dan; usluge imaju zasebno pravilo ažuriranja pri promjeni, s arhivom od najmanje 30 dana i **zasebnom datotekom za svaki prodajni objekt** (webshop i poslovnice).
+- **strojno čitljiv cjenik (CSV, roba i usluge)** na javnoj adresi `/cjenik/` (zadana putanja; mijenja se u postavkama, a stvarna adresa vaše trgovine piše u kartici Cjenik), s propisanim poljima i nazivom datoteke, za robu ažuriran jednom dnevno do 08:00 za tekući radni dan; usluge imaju zasebno pravilo ažuriranja pri promjeni, s arhivom od najmanje 30 dana i **zasebnom datotekom za svaki prodajni objekt** (webshop i poslovnice).
 
-Pravna osnova: [Odluka o isticanju dodatne cijene](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_101_1212.html) i [Odluka o objavi cjenika proizvoda i usluga](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_101_1213.html) (NN 101/2026), uz odgodu stupanja na snagu na 17. 11. 2026. ([NN 110/2026, 1309](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_110_1309.html) i [1310](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_110_1310.html)). Referentni datum sidrene cijene ostaje 10. 9. 2026.; odgoda ga ne mijenja.
+Pravna osnova: [Pravilnik o isticanju bazne cijene proizvoda](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_11_132_1583.html) i [Pravilnik o načinu objave cjenika proizvoda](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_11_132_1584.html) (NN 132/2026, na snazi od 17. 11. 2026.; zamjenjuju odluke iz NN 101/2026). Referentni datum bazne (sidrene) cijene ostaje 10. 9. 2026.
 
 ### Jedan dnevni izvoz robe
 
@@ -79,7 +86,7 @@ Postojeći zadani način „Svi proizvodi” stvara dodatne izvoze i nije zakons
 - Oznaka sidrene cijene na popisu proizvoda, stranici proizvoda, varijacijama, košarici, mini-košarici i blagajni; podaci za blokovsku košaricu putem Store API-ja; shortcode `[sidrena_cijena]` za bannere.
 - Povijest cijena i najniža cijena u 30 dana; referenca ostaje zamrznuta tijekom postupnih sniženja.
 - XML i CSV cjenik s poljima naziv, šifra, marka, jedinica mjere, cijena za jedinicu mjere, maloprodajna cijena + posebni oblik prodaje, sidrena cijena, barkod, dostupnost; usluge s vlastitim skupom polja.
-- Jedna datoteka po prodajnom objektu, naziv `oblik_adresa_oznaka_brojpohrane_YYYYMMDD_HHMMSS.xml`, javne adrese `/cjenik/`, `/cjenik/latest.xml`, `/cjenik/{oznaka}/latest.xml`, `/cjenik/index.json`.
+- Cjenik robe i cjenik usluga (CSV) po prodajnom objektu ili jedan za sva prodajna mjesta, naziv `OIB_oblik_adresa_oznaka_ROBA_broj_GGGGMMDD_SSMM.csv`, javne adrese `/cjenik/`, `/cjenik/latest_roba.csv`, `/cjenik/latest_usluge.csv`, `/cjenik/{oznaka}/latest_roba.csv`, `/cjenik/index.json`.
 - Alati: snimanje trenutnih redovnih cijena kao sidrenih (akcijske se nikad ne kopiraju), CSV uvoz/izvoz, automatsko snimanje na budući datum (npr. „bazna cijena” od 17. 11. 2026.).
 - Action Scheduler ili WP-Cron, vanjski cron URL, WP-CLI naredbe (`wp scwc …`), HPOS kompatibilnost, predlošci koje tema može nadjačati, kuke s prefiksom `scwc_`.
 
@@ -127,7 +134,7 @@ Dodatak provjerava [GitHub Releases](../../releases) i WordPress prikazuje uobi�
 ## Dokumentacija
 
 - **Priručnik za vlasnike trgovine (PDF):** [`docs/manual/Sidrena-cijena-za-WooCommerce-prirucnik.pdf`](docs/manual/Sidrena-cijena-za-WooCommerce-prirucnik.pdf) – postavke polje po polje, alati, javni cjenik, automatika, kontrolna lista usklađenosti, rješavanje problema.
-- **`readme.txt`** – WordPress.org opis, tablica usklađenosti s NN 101/2026, česta pitanja.
+- **`readme.txt`** – WordPress.org opis, tablica usklađenosti s NN 132/2026, česta pitanja.
 - **Specifikacija dizajna:** `docs/superpowers/specs/2026-09-18-sidrena-cijena-design.md`.
 
 ## Razvoj

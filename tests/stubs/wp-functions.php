@@ -198,3 +198,16 @@ if ( ! function_exists( 'add_query_arg' ) ) {
 if ( ! function_exists( 'wp_json_encode' ) ) {
 	function wp_json_encode( $data, int $options = 0, int $depth = 512 ) { return json_encode( $data, $options, $depth ); }
 }
+if ( ! class_exists( 'WP_Post' ) ) {
+	final class WP_Post {
+		public int $ID          = 0;
+		public string $post_type = 'post';
+
+		/** @param array<string,mixed> $props */
+		public function __construct( array $props = [] ) {
+			foreach ( $props as $key => $value ) {
+				$this->$key = $value;
+			}
+		}
+	}
+}

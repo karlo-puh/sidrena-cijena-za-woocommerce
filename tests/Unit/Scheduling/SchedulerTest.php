@@ -155,17 +155,21 @@ final class SchedulerTest extends TestCase {
 		self::assertSame( strtotime( '2026-10-01 03:05:00 UTC' ), $single[0]['timestamp'] );
 	}
 
-	public function test_on_change_generation_before_08_00_never_slips_past_the_deadline(): void {
-		// 05:58 UTC = 07:58 Zagreb (CEST): +300 s would be 08:03 → run immediately.
-		$this->scheduler( '2026-10-01 05:58:00' )->scheduleGenerationSoon( 300, 'change' );
-		self::assertSame( strtotime( '2026-10-01 05:58:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
+	public function test_on_change_generation_before_11_00_never_slips_past_the_deadline(): void {
+		// 08:58 UTC = 10:58 Zagreb (CEST): +300 s would be 11:03 → run immediately.
+		$this->scheduler( '2026-10-01 08:58:00' )->scheduleGenerationSoon( 300, 'change' );
+		self::assertSame( strtotime( '2026-10-01 08:58:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
 		scwc_test_schedule_reset();
-		// 07:40 local + 5 min = 07:45 → still before the 07:55 safety margin, normal debounce.
-		$this->scheduler( '2026-10-01 05:40:00' )->scheduleGenerationSoon( 300, 'change' );
-		self::assertSame( strtotime( '2026-10-01 05:45:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
+		// 10:52 local + 5 min = 10:57 → past the 10:55 safety margin → run immediately.
+		$this->scheduler( '2026-10-01 08:52:00' )->scheduleGenerationSoon( 300, 'change' );
+		self::assertSame( strtotime( '2026-10-01 08:52:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
 		scwc_test_schedule_reset();
-		// 10:00 local: deadline already passed for today, normal debounce.
-		$this->scheduler( '2026-10-01 08:00:00' )->scheduleGenerationSoon( 300, 'change' );
-		self::assertSame( strtotime( '2026-10-01 08:05:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
+		// 10:40 local + 5 min = 10:45 → still before the margin, normal debounce.
+		$this->scheduler( '2026-10-01 08:40:00' )->scheduleGenerationSoon( 300, 'change' );
+		self::assertSame( strtotime( '2026-10-01 08:45:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
+		scwc_test_schedule_reset();
+		// 12:00 local: deadline already passed for today, normal debounce.
+		$this->scheduler( '2026-10-01 10:00:00' )->scheduleGenerationSoon( 300, 'change' );
+		self::assertSame( strtotime( '2026-10-01 10:05:00 UTC' ), $GLOBALS['scwc_test_schedule']['single'][0]['timestamp'] );
 	}
 }

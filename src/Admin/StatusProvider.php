@@ -58,11 +58,11 @@ final class StatusProvider {
 			'label' => __( 'Javna adresa cjenika', 'sidrena-cijena-za-woocommerce' ),
 			'value' => '<strong>' . esc_html( $base ) . '</strong><br><span class="description">' . sprintf(
 				/* translators: 1: slug */
-				esc_html__( 'Adresa je /%1$s/ (i /%1$s/latest.xml, /%1$s/latest.csv), a ne /cijene ni /%1$s.xml. Slug mijenjate u kartici Cjenik.', 'sidrena-cijena-za-woocommerce' ),
+				esc_html__( 'Adresa je /%1$s/ (i /%1$s/latest_roba.csv, /%1$s/latest_usluge.csv), a ne /cijene. Slug mijenjate u kartici Cjenik.', 'sidrena-cijena-za-woocommerce' ),
 				esc_html( $slug )
 			) . '</span>',
 		];
-		$result = ( $this->http )( $base . 'latest.xml' );
+		$result = ( $this->http )( $base . 'latest.csv' ); // Alias of the current list (goods, or services in a services-only shop).
 		if ( is_array( $result ) ) {
 			$code = (int) ( $result['code'] ?? 0 );
 			$hint = match ( true ) {
@@ -137,10 +137,10 @@ final class StatusProvider {
 		$base  = home_url( '/' . trim( (string) $this->settings->get( 'price_list.slug', 'cjenik' ), '/' ) . '/' );
 		$links = [];
 		foreach ( [
-			''           => __( 'Popis', 'sidrena-cijena-za-woocommerce' ),
-			'latest.xml' => 'latest.xml',
-			'latest.csv' => 'latest.csv',
-			'index.json' => 'index.json',
+			''                  => __( 'Popis', 'sidrena-cijena-za-woocommerce' ),
+			'latest_roba.csv'   => 'latest_roba.csv',
+			'latest_usluge.csv' => 'latest_usluge.csv',
+			'index.json'        => 'index.json',
 		] as $path => $label ) {
 			$links[] = '<a href="' . esc_url( $base . $path ) . '" target="_blank" rel="noopener">' . esc_html( (string) $label ) . '</a>';
 		}
@@ -152,7 +152,7 @@ final class StatusProvider {
 		if ( count( $outlets ) > 1 ) {
 			$perOutlet = [];
 			foreach ( $outlets as $outlet ) {
-				$perOutlet[] = esc_html( $outlet->label ) . ': <a href="' . esc_url( $base . $outlet->key . '/latest.xml' ) . '" target="_blank" rel="noopener">latest.xml</a> · <a href="' . esc_url( $base . $outlet->key . '/latest.csv' ) . '" target="_blank" rel="noopener">latest.csv</a>';
+				$perOutlet[] = esc_html( $outlet->label ) . ': <a href="' . esc_url( $base . $outlet->key . '/latest_roba.csv' ) . '" target="_blank" rel="noopener">latest_roba.csv</a> · <a href="' . esc_url( $base . $outlet->key . '/latest_usluge.csv' ) . '" target="_blank" rel="noopener">latest_usluge.csv</a>';
 			}
 			$rows[] = [
 				'label' => __( 'Po prodajnom objektu', 'sidrena-cijena-za-woocommerce' ),

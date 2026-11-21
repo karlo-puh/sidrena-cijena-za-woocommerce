@@ -53,6 +53,7 @@ final class IndexRenderer {
 				$files[] = [
 					'name'         => (string) $e['name'],
 					'format'       => (string) $e['format'],
+					'kind'         => (string) ( $e['kind'] ?? '' ),
 					'url'          => $this->fileUrl( (string) $e['name'] ),
 					'direct_url'   => $this->storage->url( (string) $e['name'] ),
 					'generated_at' => (string) ( $e['generated_at'] ?? '' ),
@@ -63,10 +64,11 @@ final class IndexRenderer {
 				];
 			}
 			$latest = [];
-			foreach ( [ 'xml', 'csv' ] as $format ) {
-				$entry = $this->manifest->latest( $format, $outlet->key, $primary );
+			$key    = (bool) $this->settings->get( 'price_list.shared_list', false ) ? $primary : $outlet->key;
+			foreach ( [ 'roba', 'usluge' ] as $kind ) {
+				$entry = $this->manifest->current( $key, $primary, $kind );
 				if ( $entry && $this->storage->exists( (string) $entry['name'] ) ) {
-					$latest[ $format ] = $base . ( $outlet->isPrimary() ? '' : $outlet->key . '/' ) . 'latest.' . $format;
+					$latest[ $kind ] = $base . ( $outlet->isPrimary() ? '' : $outlet->key . '/' ) . 'latest_' . $kind . '.csv';
 				}
 			}
 			$list[] = [

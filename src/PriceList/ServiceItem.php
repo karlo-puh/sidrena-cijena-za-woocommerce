@@ -1,6 +1,6 @@
 <?php
 /**
- * Value object: one service ("usluga") row of the price list.
+ * One services row of the price list (Pravilnik o načinu objave cjenika proizvoda, NN 132/2026, čl. 3(3)).
  *
  * @package SidrenaCijena
  */
@@ -11,14 +11,11 @@ namespace SidrenaCijena\PriceList;
 
 final class ServiceItem {
 
-	/**
-	 * @param array<string,array{amount:?float,date:?string}> $references Reference prices keyed by type key.
-	 */
 	public function __construct(
+		public readonly int $productId,
 		public readonly string $name,
 		public readonly float $price,
 		public readonly bool $isSpecialSale,
-		public readonly string $saleName,
-		public readonly array $references,
+		public readonly ?float $basePrice,
 	) {}
 }

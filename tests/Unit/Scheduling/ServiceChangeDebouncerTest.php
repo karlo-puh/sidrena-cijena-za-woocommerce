@@ -4,10 +4,6 @@ declare(strict_types=1);
 namespace SidrenaCijena\Tests\Unit\Scheduling;
 
 use Brain\Monkey\Actions;
-use Brain\Monkey\Functions;
-use SidrenaCijena\History\Transition;
-use SidrenaCijena\Product\ProductSnapshot;
-use SidrenaCijena\Product\ServiceRule;
 use SidrenaCijena\Scheduling\ActionSchedulerBackend;
 use SidrenaCijena\Scheduling\Scheduler;
 use SidrenaCijena\Scheduling\ServiceChangeDebouncer;
@@ -22,81 +18,38 @@ final class ServiceChangeDebouncerTest extends TestCase {
 		scwc_test_schedule_reset();
 	}
 
-	private function debouncer( string $mode = 'services', bool $enabled = true ): ServiceChangeDebouncer {
+	private function debouncer( string $mode = 'all', bool $enabled = true ): ServiceChangeDebouncer {
 		$settings  = ( new Settings( Defaults::all() ) )->with( 'price_list.regenerate_on_change', $mode )->with( 'price_list.enabled', $enabled );
-		$scheduler = new Scheduler( new ActionSchedulerBackend(), $settings, new FixedClock( '2026-10-01 03:00:00' ) );
-		return new ServiceChangeDebouncer( $scheduler, $settings, new ServiceRule( 'virtual_or_flag' ) );
+		$scheduler = new Scheduler( new ActionSchedulerBackend(), $settings, new FixedClock( '2026-10-01 10:00:00' ) );
+		return new ServiceChangeDebouncer( $scheduler, $settings );
 	}
 
 	private function generated(): array {
 		return array_values( array_filter( $GLOBALS['scwc_test_schedule']['single'], fn( $s ) => Scheduler::HOOK_GENERATE === $s['hook'] ) );
 	}
 
-	public function test_registers_listeners(): void {
-		Actions\expectAdded( 'scwc_price_changed' )->once()->with( \Mockery::type( 'callable' ), 10, 2 );
-		Actions\expectAdded( 'scwc_product_removed' )->once();
-		Actions\expectAdded( 'scwc_snapshot_completed' )->once();
-		Actions\expectAdded( 'scwc_import_completed' )->once();
-		$this->debouncer()->register();
+	public function test_registers_only_bulk_listeners(): void {
+		$debouncer = $this->debouncer();
+		foreach ( [ 'woocommerce_delete_product', 'woocommerce_delete_product_variation', 'update_option_scwc_settings', 'scwc_snapshot_completed', 'scwc_import_completed' ] as $hook ) {
+			Actions\expectAdded( $hook )->once()->with( [ $debouncer, 'touch' ] );
+		}
+		Actions\expectAdded( 'scwc_price_changed' )->never();
+		Actions\expectAdded( 'scwc_first_offer_captured' )->never();
+		$debouncer->register();
 	}
 
-	public function test_service_change_schedules_debounced_generation(): void {
-		Functions\expect( 'update_option' )->once()->with( 'scwc_services_dirty_at', \Mockery::type( 'int' ), false );
-		$this->debouncer()->onPriceChanged( ProductSnapshot::fromArray( [ 'id' => 1, 'isVirtual' => true ] ), Transition::CHANGED );
+	public function test_touch_schedules_one_debounced_bulk_build(): void {
+		$this->debouncer()->touch();
+		$this->debouncer()->touch();
 		$g = $this->generated();
-		self::assertCount( 1, $g );
-		self::assertSame( [ 'reason' => 'change' ], $g[0]['args'] );
-		self::assertSame( strtotime( '2026-10-01 03:10:00 UTC' ), $g[0]['timestamp'], 'default debounce 600 s' );
-	}
-
-	public function test_goods_change_ignored_in_services_mode_but_not_in_all_mode(): void {
-		$goods = ProductSnapshot::fromArray( [ 'id' => 1, 'isVirtual' => false ] );
-		$this->debouncer( 'services' )->onPriceChanged( $goods, Transition::CHANGED );
-		self::assertCount( 0, $this->generated() );
-		Functions\when( 'update_option' )->justReturn( true );
-		$this->debouncer( 'all' )->onPriceChanged( $goods, Transition::CHANGED );
-		self::assertCount( 1, $this->generated() );
+		self::assertCount( 1, $g, 'repeated touches collapse into one pending run' );
+		self::assertSame( [ 'reason' => 'bulk' ], $g[0]['args'] );
+		self::assertSame( strtotime( '2026-10-01 10:10:00 UTC' ), $g[0]['timestamp'], 'default debounce 600 s' );
 	}
 
 	public function test_never_mode_and_disabled_price_list_do_nothing(): void {
-		$service = ProductSnapshot::fromArray( [ 'id' => 1, 'isVirtual' => true ] );
-		$this->debouncer( 'never' )->onPriceChanged( $service, Transition::CHANGED );
-		$this->debouncer( 'services', false )->onPriceChanged( $service, Transition::CHANGED );
+		$this->debouncer( 'never' )->touch();
+		$this->debouncer( 'all', false )->touch();
 		self::assertCount( 0, $this->generated() );
-	}
-
-	public function test_daily_only_mode_keeps_one_daily_export_despite_product_events(): void {
-		$settings = ( new Settings( Defaults::all() ) )->with( 'price_list.regenerate_on_change', 'never' );
-		$scheduler = new Scheduler( new ActionSchedulerBackend(), $settings, new FixedClock( '2026-10-01 10:00:00' ) );
-		$debouncer = new ServiceChangeDebouncer( $scheduler, $settings, new ServiceRule( 'virtual_or_flag' ) );
-		Functions\expect( 'update_option' )->never();
-		$scheduler->ensureScheduled();
-		for ( $i = 1; $i <= 100; ++$i ) {
-			$debouncer->onPriceChanged( ProductSnapshot::fromArray( [ 'id' => $i, 'isVirtual' => false ] ), Transition::CHANGED );
-		}
-		$debouncer->onBulkChange();
-		$debouncer->onProductRemoved( 5 );
-		$scheduler->ensureScheduled();
-		$jobs = $this->generated();
-		self::assertCount( 1, $jobs );
-		self::assertSame( [], $jobs[0]['args'] );
-		self::assertSame( strtotime( '2026-10-02 04:00:00 UTC' ), $jobs[0]['timestamp'], '06:00 Zagreb next day' );
-	}
-
-	public function test_bulk_events_always_touch(): void {
-		Functions\when( 'update_option' )->justReturn( true );
-		$this->debouncer()->onBulkChange();
-		$this->debouncer()->onProductRemoved( 5 );
-		self::assertCount( 1, $this->generated(), 'both touches collapse into one pending on-change run' );
-	}
-
-	public function test_default_settings_regenerate_on_any_product_change(): void {
-		\Brain\Monkey\Functions\when( 'update_option' )->justReturn( true );
-		$settings  = new Settings( Defaults::all() );
-		$scheduler = new Scheduler( new ActionSchedulerBackend(), $settings, new FixedClock( '2026-10-01 10:00:00' ) );
-		( new ServiceChangeDebouncer( $scheduler, $settings, new ServiceRule( 'virtual_or_flag' ) ) )->onPriceChanged( ProductSnapshot::fromArray( [ 'id' => 1, 'isVirtual' => false ] ), Transition::CHANGED );
-		$g = $this->generated();
-		self::assertCount( 1, $g );
-		self::assertSame( strtotime( '2026-10-01 10:10:00 UTC' ), $g[0]['timestamp'], 'default debounce 600 s' );
 	}
 }

@@ -73,17 +73,14 @@ class Manifest {
 	}
 
 	/**
-	 * @return array<string,mixed>|null
-	 */
-	/**
 	 * Newest entry of a format. With $outletKey only that outlet's files count; entries without an
-	 * outlet key (pre-1.1 manifests) belong to $primaryKey.
+	 * outlet key (pre-1.1 manifests) belong to $primaryKey. With $kind only 2.0 files of that kind count.
 	 *
 	 * @return array<string,mixed>|null
 	 */
-	public function latest( string $format, ?string $outletKey = null, string $primaryKey = '' ): ?array {
+	public function latest( string $format, ?string $outletKey = null, string $primaryKey = '', ?string $kind = null ): ?array {
 		foreach ( $this->entries() as $entry ) {
-			if ( ( $entry['format'] ?? '' ) !== $format ) {
+			if ( ( $entry['format'] ?? '' ) !== $format || ( null !== $kind && ( $entry['kind'] ?? '' ) !== $kind ) ) {
 				continue;
 			}
 			if ( null === $outletKey || self::belongsTo( $entry, $outletKey, $primaryKey ) ) {
@@ -91,6 +88,32 @@ class Manifest {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * File served at latest_{kind}.csv, or (kind '') at the pre-2.0 latest.csv / latest.xml: the goods list (the
+	 * services list in a services-only shop); before the first 2.0 run, the old file of the requested format.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	public function current( string $outletKey, string $primaryKey, string $kind, string $format = 'csv' ): ?array {
+		if ( '' !== $kind ) {
+			return $this->latest( 'csv', $outletKey, $primaryKey, $kind );
+		}
+		return $this->latest( 'csv', $outletKey, $primaryKey, CsvWriter::GOODS )
+			?? $this->latest( 'csv', $outletKey, $primaryKey, CsvWriter::SERVICES )
+			?? $this->latest( $format, $outletKey, $primaryKey );
+	}
+
+	/** Running number (broj pohrane) for the next file of an outlet and kind. */
+	public function nextNumber( string $outletKey, string $kind ): int {
+		$max = 0;
+		foreach ( $this->entries() as $entry ) {
+			if ( ( $entry['outlet'] ?? '' ) === $outletKey && ( $entry['kind'] ?? '' ) === $kind ) {
+				$max = max( $max, (int) ( $entry['number'] ?? 0 ) );
+			}
+		}
+		return $max + 1;
 	}
 
 	/**

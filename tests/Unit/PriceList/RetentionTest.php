@@ -9,6 +9,7 @@ use SidrenaCijena\PriceList\Storage;
 use SidrenaCijena\Tests\Support\FixedClock;
 use SidrenaCijena\Tests\TestCase;
 
+/** "Now" is 2026-10-01 04:00 UTC, so with 15 days a file replaced before 2026-09-16 04:00 goes. */
 final class RetentionTest extends TestCase {
 	private string $dir;
 	private Storage $storage;
@@ -29,76 +30,87 @@ final class RetentionTest extends TestCase {
 		parent::tearDown();
 	}
 
-	private function file( string $name, string $format, string $utc, bool $onDisk = true ): void {
+	/** Adds a manifest entry (call oldest first; the manifest is newest first). Kind '' = pre-2.0 file. */
+	private function file( string $name, string $utc, string $kind = 'roba', string $outlet = 'web1', bool $onDisk = true ): void {
 		if ( $onDisk ) {
 			file_put_contents( $this->storage->path( $name ), 'x' );
 		}
-		$this->manifest->add( [ 'name' => $name, 'format' => $format, 'generated_at' => $utc, 'generated_at_utc' => $utc, 'reason' => 'scheduled', 'products' => 1, 'services' => 0, 'size' => 1, 'sha256' => '' ] );
+		$entry = [ 'name' => $name, 'format' => substr( $name, -3 ), 'generated_at_utc' => $utc ];
+		if ( '' !== $kind ) {
+			$entry += [ 'kind' => $kind, 'outlet' => $outlet ];
+		}
+		$this->manifest->add( $entry );
 	}
 
-	private function retention( string $nowUtc = '2026-10-01 04:00:12' ): Retention {
-		return new Retention( $this->manifest, $this->storage, new FixedClock( $nowUtc ) );
+	/** @param string[] $knownKeys */
+	private function prune( int $days = 15, array $knownKeys = [] ): array {
+		return ( new Retention( $this->manifest, $this->storage, new FixedClock( '2026-10-01 04:00:00' ) ) )->prune( $days, 'web1', $knownKeys );
 	}
 
-	public function test_deletes_files_older_than_the_window_from_disk_and_manifest(): void {
-		$this->file( 'old_20260801_060000.xml', 'xml', '2026-08-01 04:00:00' );
-		$this->file( 'old_20260801_060000.csv', 'csv', '2026-08-01 04:00:00' );
-		$this->file( 'mid_20260915_060000.xml', 'xml', '2026-09-15 04:00:00' );
-		$this->file( 'new_20261001_060000.xml', 'xml', '2026-10-01 04:00:00' );
-		$this->file( 'new_20261001_060000.csv', 'csv', '2026-10-01 04:00:00' );
-		$removed = $this->retention()->prune( 35 );
-		self::assertEqualsCanonicalizing( [ 'old_20260801_060000.xml', 'old_20260801_060000.csv' ], $removed );
-		self::assertFileDoesNotExist( $this->storage->path( 'old_20260801_060000.xml' ) );
-		self::assertFileExists( $this->storage->path( 'mid_20260915_060000.xml' ) );
-		self::assertFalse( $this->manifest->has( 'old_20260801_060000.csv' ) );
-		self::assertTrue( $this->manifest->has( 'mid_20260915_060000.xml' ) );
-		self::assertCount( 3, ( new Manifest( $this->storage ) )->entries() );
+	public function test_file_goes_n_days_after_it_was_replaced_not_after_it_was_made(): void {
+		$this->file( 'a.csv', '2026-07-01 04:00:00' ); // Replaced 08-01: gone.
+		$this->file( 'b.csv', '2026-08-01 04:00:00' ); // Old, but replaced only on 09-20: kept.
+		$this->file( 'c.csv', '2026-09-20 04:00:00' );
+		$this->file( 'd.csv', '2026-09-28 04:00:00' ); // Current.
+		self::assertSame( [], $this->prune( 90 ), 'a longer setting keeps replaced files longer' );
+		self::assertSame( [ 'a.csv' ], $this->prune() );
+		self::assertFileDoesNotExist( $this->storage->path( 'a.csv' ) );
+		self::assertSame( [ 'd.csv', 'c.csv', 'b.csv' ], array_column( ( new Manifest( $this->storage ) )->entries(), 'name' ) );
 	}
 
-	public function test_window_is_never_shorter_than_thirty_days(): void {
-		$this->file( 'a_20260910_060000.xml', 'xml', '2026-09-10 04:00:00' ); // 21 days old
-		$this->file( 'b_20261001_060000.xml', 'xml', '2026-10-01 04:00:00' );
-		self::assertSame( [], $this->retention()->prune( 1 ) );
-		self::assertFileExists( $this->storage->path( 'a_20260910_060000.xml' ) );
+	public function test_window_is_never_shorter_than_fifteen_days(): void {
+		$this->file( 'a.csv', '2026-09-01 04:00:00' );
+		$this->file( 'b.csv', '2026-09-15 04:00:00' ); // Replaced a 16 days ago.
+		$this->file( 'c.csv', '2026-09-20 04:00:00' ); // Replaced b 11 days ago.
+		self::assertSame( [ 'a.csv' ], $this->prune( 1 ) );
 	}
 
-	public function test_newest_file_of_each_format_is_kept_even_if_old(): void {
-		$this->file( 'a_20260101_060000.xml', 'xml', '2026-01-01 04:00:00' );
-		$this->file( 'b_20260201_060000.xml', 'xml', '2026-02-01 04:00:00' );
-		$this->file( 'c_20260101_060000.csv', 'csv', '2026-01-01 04:00:00' );
-		self::assertSame( [ 'a_20260101_060000.xml' ], $this->retention()->prune( 30 ) );
-		self::assertTrue( $this->manifest->has( 'b_20260201_060000.xml' ) );
-		self::assertTrue( $this->manifest->has( 'c_20260101_060000.csv' ) );
+	public function test_current_file_of_each_outlet_and_kind_is_never_deleted(): void {
+		$this->file( 'roba-old.csv', '2026-01-01 04:00:00' );
+		$this->file( 'usluge.csv', '2026-01-01 04:00:00', 'usluge' );
+		$this->file( 'zg-roba.csv', '2026-01-01 04:00:00', 'roba', 'zg-02' );
+		$this->file( 'roba-new.csv', '2026-01-02 04:00:00' );
+		self::assertSame( [ 'roba-old.csv' ], $this->prune() );
+		self::assertSame( [ 'roba-new.csv', 'zg-roba.csv', 'usluge.csv' ], array_column( $this->manifest->entries(), 'name' ) );
 	}
 
-	public function test_newest_file_of_each_outlet_and_format_is_kept(): void {
-		$this->file( 'webshop_a_web1_1_20260101_060000.xml', 'xml', '2026-01-01 04:00:00' );
-		$this->file( 'webshop_a_web1_1_20260201_060000.xml', 'xml', '2026-02-01 04:00:00' );
-		$this->manifest->add( [ 'name' => 'poslovnica_b_zg02_3_20260101_060000.xml', 'format' => 'xml', 'outlet' => 'zg-02', 'generated_at' => '', 'generated_at_utc' => '2026-01-01 04:00:00', 'reason' => 'scheduled', 'products' => 1, 'services' => 0, 'size' => 1, 'sha256' => '' ] );
-		file_put_contents( $this->storage->path( 'poslovnica_b_zg02_3_20260101_060000.xml' ), 'x' );
-		self::assertSame( [ 'webshop_a_web1_1_20260101_060000.xml' ], $this->retention()->prune( 30 ) );
-		self::assertTrue( $this->manifest->has( 'poslovnica_b_zg02_3_20260101_060000.xml' ), 'the other outlet\'s only file survives' );
+	public function test_pre_20_files_are_replaced_by_the_oldest_20_file_of_their_outlet(): void {
+		$this->file( 'old1.xml', '2026-08-01 04:00:00', '' );
+		$this->file( 'old1.csv', '2026-08-01 04:00:00', '' );
+		$this->file( 'old2.xml', '2026-08-15 04:00:00', '' );
+		$this->file( 'old2.csv', '2026-08-15 04:00:00', '' );
+		$this->file( 'zg.xml', '2026-08-15 04:00:00', '', 'zg-02' ); // No outlet key: belongs to the primary (web1).
+		$this->file( 'new1.csv', '2026-09-10 04:00:00' ); // First 2.0 file: replaced old2 26 days ago.
+		$this->file( 'new2.csv', '2026-09-30 04:00:00' );
+		self::assertEqualsCanonicalizing( [ 'old1.xml', 'old1.csv', 'old2.xml', 'old2.csv', 'zg.xml' ], $this->prune() );
+		self::assertSame( [ 'new2.csv', 'new1.csv' ], array_column( $this->manifest->entries(), 'name' ) );
 	}
 
-	public function test_entries_whose_file_vanished_are_dropped(): void {
-		$this->file( 'gone_20261001_060000.xml', 'xml', '2026-10-01 04:00:00', false );
-		$this->file( 'here_20261001_060100.xml', 'xml', '2026-10-01 04:01:00' );
-		self::assertSame( [ 'gone_20261001_060000.xml' ], $this->retention()->prune( 35 ) );
-		self::assertSame( [ 'here_20261001_060100.xml' ], array_column( $this->manifest->entries(), 'name' ) );
+	public function test_pre_20_files_stay_until_15_days_after_the_first_20_file(): void {
+		$this->file( 'old1.xml', '2026-08-01 04:00:00', '' );
+		$this->file( 'old1.csv', '2026-08-01 04:00:00', '' );
+		$this->file( 'old2.xml', '2026-08-02 04:00:00', '' ); // Same-time pair: neither replaces the other.
+		$this->file( 'old2.csv', '2026-08-02 04:00:00', '' );
+		self::assertEqualsCanonicalizing( [ 'old1.xml', 'old1.csv' ], $this->prune(), 'without 2.0 files the newest old pair is current' );
+		$this->file( 'new.csv', '2026-09-25 04:00:00' );
+		self::assertSame( [], $this->prune() );
+		self::assertTrue( $this->manifest->has( 'old2.xml' ) );
 	}
 
-	public function test_entries_without_a_parsable_date_are_left_alone(): void {
-		$this->file( 'weird_x.xml', 'xml', 'not-a-date' );
-		$this->file( 'new_20261001_060000.xml', 'xml', '2026-10-01 04:00:00' );
-		self::assertSame( [], $this->retention()->prune( 35 ) );
-		self::assertTrue( $this->manifest->has( 'weird_x.xml' ) );
+	public function test_files_of_removed_outlets_count_as_replaced_when_they_were_made(): void {
+		$this->file( 'web1.csv', '2026-01-01 04:00:00' );
+		$this->file( 'gone-old.csv', '2026-09-01 04:00:00', 'roba', 'gone' );
+		$this->file( 'gone-new.csv', '2026-09-10 04:00:00', 'roba', 'gone' );
+		$this->file( 'gone2.csv', '2026-09-20 04:00:00', 'roba', 'gone2' ); // Made 11 days ago.
+		self::assertSame( [ 'gone-old.csv' ], $this->prune(), 'without known keys every outlet keeps its current file' );
+		self::assertSame( [ 'gone-new.csv' ], $this->prune( 15, [ 'web1' ] ) );
+		self::assertSame( [ 'gone2.csv', 'web1.csv' ], array_column( $this->manifest->entries(), 'name' ) );
 	}
 
-	public function test_orphaned_outlet_groups_are_pruned_by_age_when_known_keys_are_given(): void {
-		$this->file( 'webshop_a_web1_1_20260101_060000.xml', 'xml', '2026-01-01 04:00:00' );
-		$this->manifest->add( [ 'name' => 'poslovnica_gone_x_1_20260101_060000.xml', 'format' => 'xml', 'outlet' => 'gone', 'generated_at' => '', 'generated_at_utc' => '2026-01-01 04:00:00', 'reason' => 'scheduled', 'products' => 1, 'services' => 0, 'size' => 1, 'sha256' => '' ] );
-		file_put_contents( $this->storage->path( 'poslovnica_gone_x_1_20260101_060000.xml' ), 'x' );
-		self::assertSame( [ 'poslovnica_gone_x_1_20260101_060000.xml' ], $this->retention()->prune( 30, 'web1', [ 'web1' ] ) );
-		self::assertTrue( $this->manifest->has( 'webshop_a_web1_1_20260101_060000.xml' ), 'known outlet keeps its newest file' );
+	public function test_entries_whose_file_vanished_are_dropped_and_undated_ones_left_alone(): void {
+		$this->file( 'weird.csv', 'not-a-date' );
+		$this->file( 'gone.csv', '2026-09-30 04:00:00', 'roba', 'web1', false );
+		self::assertSame( [ 'gone.csv' ], $this->prune() );
+		self::assertSame( [ 'weird.csv' ], array_column( $this->manifest->entries(), 'name' ) );
 	}
 }

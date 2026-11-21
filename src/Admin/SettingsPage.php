@@ -19,9 +19,10 @@ use SidrenaCijena\Settings\Defaults;
 use SidrenaCijena\Settings\Sanitizer;
 use SidrenaCijena\Settings\Settings;
 use SidrenaCijena\Support\DateFormat;
+use SidrenaCijena\PriceList\CsvWriter;
+use SidrenaCijena\PriceList\FilenameBuilder;
 use SidrenaCijena\PriceList\Outlet;
 use SidrenaCijena\PriceList\Outlets;
-use SidrenaCijena\Support\Slugifier;
 
 /**
  * @phpstan-import-type FieldDef from Fields
@@ -156,14 +157,9 @@ class SettingsPage {
 		return $html;
 	}
 
-	/** "{form}_{address}_{label}_{storage}_YYYYMMDD_HHMMSS.xml" from current outlet settings. */
+	/** Example goods-list file name from the current settings (NN 132/2026 čl. 6). */
 	public function filenamePreview(): string {
-		$parts = [];
-		foreach ( [ 'form', 'address', 'label', 'storage_number' ] as $key ) {
-			$slug    = Slugifier::filenamePart( (string) $this->settings->get( 'outlet.' . $key, '' ) );
-			$parts[] = '' === $slug ? 'na' : $slug;
-		}
-		return implode( '_', $parts ) . '_YYYYMMDD_HHMMSS.xml';
+		return $this->filenamePreviewFor( Outlet::fromSettings( $this->settings ) );
 	}
 
 	/**
@@ -211,10 +207,10 @@ class SettingsPage {
 
 	private function intro( string $tab ): string {
 		$text = match ( $tab ) {
-			'outlet'     => __( 'Podaci o prodajnom objektu ulaze u naziv datoteke i zaglavlje cjenika (NN 101/2026).', 'sidrena-cijena-za-woocommerce' ),
+			'outlet'     => __( 'Podaci o prodajnom objektu ulaze u naziv datoteke cjenika (NN 132/2026).', 'sidrena-cijena-za-woocommerce' ),
 			'reference'  => __( 'Sidrena cijena je redovna cijena koja je vrijedila na referentni dan; akcijske cijene se ne uzimaju u obzir.', 'sidrena-cijena-za-woocommerce' ),
 			'display'    => __( 'Oznaka se prikazuje uz svaku cijenu: jasno, vidljivo i čitljivo, s referentnim datumom.', 'sidrena-cijena-za-woocommerce' ),
-			'price_list' => __( 'Cjenik robe objavljuje se svaki dan prije 08:00, cjenik usluga pri svakoj promjeni; verzije se čuvaju najmanje 30 dana.', 'sidrena-cijena-za-woocommerce' ),
+			'price_list' => __( 'Cjenik robe i cjenik usluga (CSV) objavljuju se pri svakoj promjeni, najkasnije do 11:00 na dan promjene; dnevna provjera objavljuje novu datoteku samo ako se cjenik promijenio. Zamijenjene datoteke dostupne su još najmanje 15 dana.', 'sidrena-cijena-za-woocommerce' ),
 			'history'    => __( 'Povijest cijena služi za izračun najniže cijene u 30 dana prije sniženja (čl. 19 ZZP).', 'sidrena-cijena-za-woocommerce' ),
 			default      => '',
 		};
@@ -247,12 +243,12 @@ class SettingsPage {
 		$base    = (string) home_url( '/' . $slug . '/' );
 		$outlets = Outlets::fromSettings( $this->settings );
 		$html    = '<div class="scwc-box scwc-filename-preview"><h3>' . esc_html__( 'Datoteke cjenika po prodajnom objektu', 'sidrena-cijena-za-woocommerce' ) . '</h3>';
-		$html   .= '<p class="description">' . esc_html__( 'Svaki prodajni objekt dobiva vlastitu datoteku (XML i/ili CSV) s propisanim nazivom i vlastitom arhivom od najmanje 30 dana. Datum i vrijeme dodaju se pri svakom generiranju.', 'sidrena-cijena-za-woocommerce' ) . '</p>';
+		$html   .= '<p class="description">' . esc_html__( 'Svaki prodajni objekt dobiva vlastiti cjenik robe i usluga (CSV) s propisanim nazivom, osim ako je uključen isti cjenik za sva prodajna mjesta. Broj i vrijeme objave dodaju se pri svakoj objavi.', 'sidrena-cijena-za-woocommerce' ) . '</p>';
 		$html   .= '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Prodajni objekt', 'sidrena-cijena-za-woocommerce' ) . '</th><th>' . esc_html__( 'Naziv datoteke', 'sidrena-cijena-za-woocommerce' ) . '</th><th>' . esc_html__( 'Javne adrese', 'sidrena-cijena-za-woocommerce' ) . '</th></tr></thead><tbody>';
 		foreach ( $outlets as $outlet ) {
-			$urls = [ $base . $outlet->key . '/', $base . $outlet->key . '/latest.xml', $base . $outlet->key . '/latest.csv' ];
+			$urls = [ $base . $outlet->key . '/', $base . $outlet->key . '/latest_roba.csv', $base . $outlet->key . '/latest_usluge.csv' ];
 			if ( $outlet->isPrimary() ) {
-				$urls = array_merge( [ $base, $base . 'latest.xml', $base . 'latest.csv' ], $urls );
+				$urls = array_merge( [ $base, $base . 'latest_roba.csv', $base . 'latest_usluge.csv' ], $urls );
 			}
 			$links = array_map( static fn( string $u ) => '<a href="' . esc_url( $u ) . '" target="_blank" rel="noopener">' . esc_html( $u ) . '</a>', $urls );
 			$html .= '<tr><td>' . esc_html( $outlet->label ?: '–' ) . '<br><small>' . esc_html( $outlet->form . ' · ' . $outlet->address ) . '</small></td>';
@@ -262,14 +258,13 @@ class SettingsPage {
 		return $html . '</tbody></table></div>';
 	}
 
-	/** "{form}_{address}_{label}_{storage}_YYYYMMDD_HHMMSS.xml" for one outlet. */
+	/** Example goods-list file name for one outlet. */
 	public function filenamePreviewFor( Outlet $outlet ): string {
-		$parts = [];
-		foreach ( [ $outlet->form, $outlet->address, $outlet->label, $outlet->storageNumber ] as $value ) {
-			$slug    = Slugifier::filenamePart( $value );
-			$parts[] = '' === $slug ? 'na' : $slug;
-		}
-		return implode( '_', $parts ) . '_YYYYMMDD_HHMMSS.xml';
+		$seller = (string) $this->settings->get( 'price_list.seller_id', '' );
+		$shared = (bool) $this->settings->get( 'price_list.shared_list', false );
+		$name   = ( new FilenameBuilder() )->build( '' === $seller ? 'OIB' : $seller, $shared ? null : $outlet, CsvWriter::GOODS, 1, new \DateTimeImmutable( 'now', wp_timezone() ) );
+		$name   = (string) preg_replace( '/_1_\d{8}_\d{4}\.csv$/', '_{broj}_GGGGMMDD_SSMM.csv', $name );
+		return '' === $seller ? 'OIB' . substr( $name, 3 ) : $name;
 	}
 
 	private function displayPreview(): string {

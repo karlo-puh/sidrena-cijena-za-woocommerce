@@ -94,7 +94,7 @@ final class AdminNotices {
 						'warning',
 						sprintf(
 						/* translators: %s: date/time */
-							__( 'Sidrena cijena: cjenik nije osvježen od %s (obveza: svaki dan do 08:00). Provjerite WP-Cron / Action Scheduler.', 'sidrena-cijena-za-woocommerce' ),
+							__( 'Sidrena cijena: cjenik nije provjeren od %s (dnevna provjera; promijenjeni cjenik mora biti objavljen do 11:00). Provjerite WP-Cron / Action Scheduler.', 'sidrena-cijena-za-woocommerce' ),
 							esc_html( $at->setTimezone( $this->clock->timezone() )->format( 'j. n. Y. H:i' ) )
 						),
 						false
@@ -102,13 +102,13 @@ final class AdminNotices {
 				}
 			}
 			$time = (string) $this->settings->get( 'price_list.generate_time', '06:00' );
-			if ( strcmp( $time, '07:30' ) > 0 ) {
+			if ( strcmp( $time, '10:30' ) > 0 ) {
 				$notices[] = $this->notice(
 					'generate_after_deadline',
 					'warning',
 					sprintf(
 					/* translators: 1: configured time, 2: settings URL */
-						__( 'Sidrena cijena: dnevno generiranje cjenika zakazano je u %1$s, a cjenik robe mora biti objavljen svaki dan do 08:00 (NN 101/2026). <a href="%2$s">Pomaknite vrijeme</a> na najkasnije 07:30.', 'sidrena-cijena-za-woocommerce' ),
+						__( 'Sidrena cijena: dnevna provjera cjenika zakazana je u %1$s, a promijenjeni cjenik mora biti objavljen do 11:00 (NN 132/2026). <a href="%2$s">Pomaknite vrijeme</a> na najkasnije 10:30.', 'sidrena-cijena-za-woocommerce' ),
 						esc_html( $time ),
 						esc_url( $setUrl . '&tab=price_list' )
 					),
@@ -116,7 +116,7 @@ final class AdminNotices {
 				);
 			}
 			if ( ! $env->prettyPermalinks ) {
-				$notices[] = $this->notice( 'permalinks', 'warning', __( 'Sidrena cijena: trajne veze su „obične” pa je cjenik dostupan samo na adresi s parametrima (?scwc_cjenik=latest&scwc_format=xml). Preporučujemo uključiti lijepe trajne veze.', 'sidrena-cijena-za-woocommerce' ), false );
+				$notices[] = $this->notice( 'permalinks', 'warning', __( 'Sidrena cijena: trajne veze su „obične” pa je cjenik dostupan samo na adresi s parametrima (?scwc_cjenik=latest&scwc_kind=roba&scwc_format=csv). Preporučujemo uključiti lijepe trajne veze.', 'sidrena-cijena-za-woocommerce' ), false );
 			}
 		}
 
@@ -128,7 +128,7 @@ final class AdminNotices {
 					'info',
 					sprintf(
 					/* translators: 1: public URL, 2: slug */
-						__( 'Sidrena cijena: javna adresa cjenika bit će <strong>%1$s</strong> (npr. %1$slatest.xml). Adresa je /%2$s/, a ne /cijene.', 'sidrena-cijena-za-woocommerce' ),
+						__( 'Sidrena cijena: javna adresa cjenika bit će <strong>%1$s</strong> (npr. %1$slatest_roba.csv). Adresa je /%2$s/, a ne /cijene.', 'sidrena-cijena-za-woocommerce' ),
 						esc_url( home_url( '/' . $slug . '/' ) ),
 						esc_html( $slug )
 					),

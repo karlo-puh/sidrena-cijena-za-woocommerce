@@ -15,7 +15,7 @@ use SidrenaCijena\Support\Slugifier;
 
 final class Sanitizer {
 
-	public const MIN_RETENTION_DAYS = 30;
+	public const MIN_RETENTION_DAYS = 15; // Pravilnik o načinu objave cjenika proizvoda (NN 132/2026), čl. 3(6).
 
 	/**
 	 * @param array<string,mixed> $raw Raw (form) values.
@@ -197,9 +197,10 @@ final class Sanitizer {
 			case 'price_list.generate_time':
 			case 'history.sweep_time':
 				return $this->time( (string) $value ) ?? $default;
-			case 'price_list.formats':
-				$formats = array_values( array_intersect( $enums[ $path ], array_map( 'strval', (array) $value ) ) );
-				return [] === $formats ? $default : $formats;
+			case 'price_list.seller_id':
+				return (string) preg_replace( '/\D+/', '', (string) $value ); // OIB / matični broj: digits only.
+			case 'price_list.regenerate_on_change':
+				return 'never' === $value ? 'never' : 'all'; // 1.x "services" = publish on change.
 			case 'outlet.storage_number':
 				return $this->text( $value ) ?: $default;
 		}

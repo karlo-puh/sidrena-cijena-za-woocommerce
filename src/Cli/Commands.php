@@ -114,7 +114,7 @@ final class Commands {
 			WP_CLI::log( sprintf( 'Stranica %d: obrađeno %d, zapisano %d', $page, $result->processed, $result->written ) );
 			++$page;
 		} while ( $result->hasMore );
-		WP_CLI::success( sprintf( 'Gotovo: obrađeno %d, zapisano %d, preskočeno (postoji) %d, označeno bez cijene %d, bez redovne cijene %d, na akciji %d%s', $total->processed, $total->written, $total->skippedExisting, $total->markedNa, $total->skippedNoPrice, $total->skippedOnSale, $request->dryRun ? ' [probni rad]' : '' ) );
+		WP_CLI::success( sprintf( 'Gotovo: obrađeno %d, zapisano %d, preskočeno (postoji) %d, novi proizvodi (preskočeno) %d, bez redovne cijene %d, na akciji %d%s', $total->processed, $total->written, $total->skippedExisting, $total->markedNa, $total->skippedNoPrice, $total->skippedOnSale, $request->dryRun ? ' [probni rad]' : '' ) );
 	}
 
 	/**

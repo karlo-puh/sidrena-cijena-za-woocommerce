@@ -172,7 +172,7 @@ final class GitHubUpdater {
 			'requires_php'  => self::REQUIRES_PHP,
 			'last_updated'  => $release['published'],
 			'sections'      => [
-				'description' => __( 'Sidrena (dodatna) cijena, najniža cijena u 30 dana i strojno čitljiv cjenik (XML/CSV) prema NN 101/2026.', 'sidrena-cijena-za-woocommerce' ),
+				'description' => __( 'Sidrena (dodatna) cijena, najniža cijena u 30 dana i strojno čitljiv cjenik (CSV) prema NN 132/2026.', 'sidrena-cijena-za-woocommerce' ),
 				'changelog'   => '<pre>' . esc_html( $release['notes'] ) . '</pre>',
 			],
 		];

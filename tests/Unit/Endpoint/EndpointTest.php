@@ -48,6 +48,18 @@ final class EndpointTest extends TestCase {
 		parent::tearDown();
 	}
 
+	/** A 2.0 file (one kind of one outlet), newer than the pre-2.0 fixture. */
+	private function v2( string $name, string $kind, string $outlet, string $utc = '2026-11-17 05:00:00' ): void {
+		file_put_contents( $this->storage->path( $name ), "naziv\n" );
+		$this->manifest->add( [ 'name' => $name, 'format' => 'csv', 'kind' => $kind, 'outlet' => $outlet, 'number' => 1, 'generated_at' => '', 'generated_at_utc' => $utc, 'products' => 2, 'services' => 0, 'size' => 6, 'sha256' => $name ] );
+	}
+
+	private function addV2(): void {
+		$this->v2( '1_webshop_ulica-1_web1_ROBA_1_20261117_0600.csv', 'roba', 'web1' );
+		$this->v2( '1_webshop_ulica-1_web1_USLUGE_1_20261117_0600.csv', 'usluge', 'web1' );
+		$this->v2( '1_poslovnica_vukovarska-5_zg-02_ROBA_1_20261117_0600.csv', 'roba', 'zg-02' );
+	}
+
 	private function endpoint( ?Settings $settings = null ): Endpoint {
 		$settings = $settings ?? ( new Settings( Defaults::all() ) )
 			->with( 'price_list.external_cron_key', 'secret' )
@@ -78,14 +90,18 @@ final class EndpointTest extends TestCase {
 		$rules = $this->endpoint()->rules();
 		self::assertSame( 'index.php?scwc_cjenik=index', $rules['^cjenik/?$'] );
 		self::assertSame( 'index.php?scwc_cjenik=json', $rules['^cjenik/index\.json$'] );
+		self::assertSame( 'index.php?scwc_cjenik=latest&scwc_kind=$matches[1]&scwc_format=csv', $rules['^cjenik/latest_(roba|usluge)\.csv$'] );
+		self::assertSame( 'index.php?scwc_cjenik=latest&scwc_outlet=$matches[1]&scwc_kind=$matches[2]&scwc_format=csv', $rules['^cjenik/([a-z0-9-]+)/latest_(roba|usluge)\.csv$'] );
 		self::assertSame( 'index.php?scwc_cjenik=latest&scwc_format=$matches[1]', $rules['^cjenik/latest\.(xml|csv)$'] );
-		self::assertSame( 'index.php?scwc_cjenik=file&scwc_file=$matches[1]', $rules['^cjenik/([a-z0-9][a-z0-9._-]*\.(?:xml|csv))$'] );
-		self::assertSame( [ 'scwc_cjenik', 'scwc_format', 'scwc_file', 'scwc_outlet' ], $this->endpoint()->queryVars( [] ), 'scwc_run/key stay private ($_GET), `key` would collide with WC order keys' );
+		self::assertSame( 'index.php?scwc_cjenik=file&scwc_file=$matches[1]', $rules['^cjenik/([A-Za-z0-9][A-Za-z0-9._-]*\.(?:xml|csv))$'] );
+		self::assertSame( [ 'scwc_cjenik', 'scwc_format', 'scwc_file', 'scwc_outlet', 'scwc_kind' ], $this->endpoint()->queryVars( [] ), 'scwc_run/key stay private ($_GET), `key` would collide with WC order keys' );
 		self::assertSame( 'index.php?scwc_cjenik=latest&scwc_outlet=$matches[1]&scwc_format=$matches[2]', $rules['^cjenik/([a-z0-9-]+)/latest\.(xml|csv)$'] );
 		self::assertSame( 'index.php?scwc_cjenik=json&scwc_outlet=$matches[1]', $rules['^cjenik/([a-z0-9-]+)/index\.json$'] );
 		self::assertSame( 'index.php?scwc_cjenik=index&scwc_outlet=$matches[1]', $rules['^cjenik/([a-z0-9-]+)/?$'] );
-		$keys = array_keys( $rules );
-		self::assertLessThan( array_search( '^cjenik/([a-z0-9-]+)/?$', $keys, true ), array_search( '^cjenik/([a-z0-9-]+)/latest\.(xml|csv)$', $keys, true ), 'outlet latest before outlet index' );
+		$keys = array_flip( array_keys( $rules ) );
+		self::assertLessThan( $keys['^cjenik/([a-z0-9-]+)/?$'], $keys['^cjenik/([a-z0-9-]+)/latest\.(xml|csv)$'], 'outlet latest before outlet index' );
+		self::assertLessThan( $keys['^cjenik/([A-Za-z0-9][A-Za-z0-9._-]*\.(?:xml|csv))$'], $keys['^cjenik/latest_(roba|usluge)\.csv$'], 'latest_{kind}.csv before the named-file rule' );
+		self::assertSame( 1, preg_match( '#' . array_search( 'index.php?scwc_cjenik=file&scwc_file=$matches[1]', $rules, true ) . '#', 'cjenik/12345678901_ZA_SVA_PRODAJNA_MJESTA_ROBA_1_20261117_0600.csv' ), 'file rule accepts uppercase 2.0 names' );
 	}
 
 	public function test_latest_xml_streams_newest_file_with_no_cache_headers(): void {
@@ -115,12 +131,53 @@ final class EndpointTest extends TestCase {
 		self::assertSame( $this->storage->path( 'webshop_a_web1_1_20261001_060000.csv' ), $r->file, 'primary reachable under its key too' );
 	}
 
+	public function test_latest_kind_urls_serve_the_current_2_0_files(): void {
+		$this->addV2();
+		$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_kind' => 'roba', 'scwc_format' => 'csv' ], [] );
+		self::assertSame( $this->storage->path( '1_webshop_ulica-1_web1_ROBA_1_20261117_0600.csv' ), $r->file );
+		self::assertContains( 'Content-Type: text/csv; charset=UTF-8', $this->sent );
+		$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_kind' => 'usluge', 'scwc_format' => 'csv' ], [] );
+		self::assertSame( $this->storage->path( '1_webshop_ulica-1_web1_USLUGE_1_20261117_0600.csv' ), $r->file );
+		$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_outlet' => 'zg-02', 'scwc_kind' => 'roba', 'scwc_format' => 'csv' ], [] );
+		self::assertSame( $this->storage->path( '1_poslovnica_vukovarska-5_zg-02_ROBA_1_20261117_0600.csv' ), $r->file );
+		self::assertSame( 404, $this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_outlet' => 'zg-02', 'scwc_kind' => 'usluge', 'scwc_format' => 'csv' ], [] )->status, 'no services list for that outlet' );
+		self::assertSame( 404, $this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_kind' => 'other', 'scwc_format' => 'csv' ], [] )->status );
+	}
+
+	public function test_old_latest_urls_serve_the_goods_list_once_2_0_files_exist(): void {
+		$this->v2( '1_webshop_ulica-1_web1_USLUGE_1_20261117_0600.csv', 'usluge', 'web1' );
+		$this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_format' => 'xml' ], [] );
+		self::assertContains( 'X-SCWC-Latest: 1_webshop_ulica-1_web1_USLUGE_1_20261117_0600.csv', $this->sent, 'services-only shop: services list' );
+		self::assertContains( 'Content-Type: text/csv; charset=UTF-8', $this->sent, 'type follows the served file, not the URL' );
+		$this->v2( '1_webshop_ulica-1_web1_ROBA_1_20261117_0600.csv', 'roba', 'web1' );
+		foreach ( [ 'xml', 'csv' ] as $format ) {
+			$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_format' => $format ], [] );
+			self::assertSame( $this->storage->path( '1_webshop_ulica-1_web1_ROBA_1_20261117_0600.csv' ), $r->file );
+		}
+	}
+
+	public function test_shared_list_serves_the_primary_files_for_every_outlet(): void {
+		$this->v2( '1_ZA_SVA_PRODAJNA_MJESTA_ROBA_1_20261117_0600.csv', 'roba', 'web1' );
+		$settings = ( new Settings( Defaults::all() ) )
+			->with( 'price_list.shared_list', true )
+			->with( 'outlet.address', 'Ulica 1' )
+			->with( 'outlet.label', 'WEB1' )
+			->with( 'outlets.additional', [ [ 'form' => 'poslovnica', 'address' => 'Vukovarska 5', 'label' => 'ZG-02' ] ] );
+		$r = $this->endpoint( $settings )->resolve( [ 'scwc_cjenik' => 'latest', 'scwc_outlet' => 'zg-02', 'scwc_kind' => 'roba', 'scwc_format' => 'csv' ], [] );
+		self::assertSame( $this->storage->path( '1_ZA_SVA_PRODAJNA_MJESTA_ROBA_1_20261117_0600.csv' ), $r->file );
+		$json = json_decode( $this->endpoint( $settings )->resolve( [ 'scwc_cjenik' => 'json' ], [] )->body, true );
+		self::assertSame( 'https://example.hr/cjenik/zg-02/latest_roba.csv', $json['outlets'][1]['latest']['roba'] );
+	}
+
 	public function test_index_lists_every_outlet_with_its_own_latest_links(): void {
+		$this->addV2();
 		$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'index' ], [] );
 		self::assertStringContainsString( 'ZG-02', $r->body );
 		self::assertStringContainsString( 'Vukovarska 5', $r->body );
-		self::assertStringContainsString( 'https://example.hr/cjenik/zg-02/latest.xml', $r->body );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.xml', $r->body );
+		self::assertStringContainsString( 'https://example.hr/cjenik/zg-02/latest_roba.csv', $r->body );
+		self::assertStringNotContainsString( 'https://example.hr/cjenik/zg-02/latest_usluge.csv', $r->body );
+		self::assertStringContainsString( 'https://example.hr/cjenik/latest_roba.csv', $r->body );
+		self::assertStringContainsString( 'https://example.hr/cjenik/latest_usluge.csv', $r->body );
 		self::assertStringContainsString( 'https://example.hr/cjenik/poslovnica_vukovarska-5_zg-02_3_20261001_060000.xml', $r->body );
 		$one = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'index', 'scwc_outlet' => 'zg-02' ], [] );
 		self::assertSame( 200, $one->status );
@@ -130,16 +187,18 @@ final class EndpointTest extends TestCase {
 	}
 
 	public function test_index_json_has_outlets_and_keeps_primary_at_top_level(): void {
+		$this->v2( '1_poslovnica_vukovarska-5_zg-02_ROBA_1_20261117_0600.csv', 'roba', 'zg-02' );
 		$json = json_decode( $this->endpoint()->resolve( [ 'scwc_cjenik' => 'json' ], [] )->body, true );
 		self::assertSame( [ 'web1', 'zg-02' ], array_column( $json['outlets'], 'key' ) );
-		self::assertSame( 'https://example.hr/cjenik/zg-02/latest.xml', $json['outlets'][1]['latest']['xml'] );
-		self::assertArrayNotHasKey( 'csv', $json['outlets'][1]['latest'] );
+		self::assertSame( [ 'roba' => 'https://example.hr/cjenik/zg-02/latest_roba.csv' ], $json['outlets'][1]['latest'] );
+		self::assertSame( [], $json['outlets'][0]['latest'], 'no 2.0 file of the primary yet' );
 		self::assertSame( 'ZG-02', $json['outlets'][1]['label'] );
-		self::assertSame( 'https://example.hr/wp-content/uploads/scwc-cjenik/poslovnica_vukovarska-5_zg-02_3_20261001_060000.xml', $json['outlets'][1]['files'][0]['direct_url'], 'stable path independent of rewrite rules' );
+		self::assertSame( 'https://example.hr/wp-content/uploads/scwc-cjenik/poslovnica_vukovarska-5_zg-02_3_20261001_060000.xml', $json['outlets'][1]['files'][1]['direct_url'], 'stable path independent of rewrite rules' );
+		self::assertSame( [ 'roba', '' ], array_column( $json['outlets'][1]['files'], 'kind' ) );
 		self::assertArrayHasKey( 'direct_url', $json['files'][0] );
-		self::assertCount( 1, $json['outlets'][1]['files'] );
+		self::assertCount( 2, $json['outlets'][1]['files'] );
 		self::assertCount( 3, $json['outlets'][0]['files'], 'legacy entries listed under the primary' );
-		self::assertSame( 'https://example.hr/cjenik/latest.xml', $json['latest']['xml'], 'top-level = primary (backward compatible)' );
+		self::assertSame( $json['outlets'][0]['latest'], $json['latest'], 'top-level = primary (backward compatible)' );
 		self::assertCount( 3, $json['files'] );
 		$one = json_decode( $this->endpoint()->resolve( [ 'scwc_cjenik' => 'json', 'scwc_outlet' => 'zg-02' ], [] )->body, true );
 		self::assertCount( 1, $one['outlets'] );
@@ -172,20 +231,20 @@ final class EndpointTest extends TestCase {
 		$r = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'index' ], [] );
 		self::assertSame( 200, $r->status );
 		self::assertStringContainsString( 'Content-Type: text/html; charset=UTF-8', implode( "\n", $this->sent ) );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.xml', $r->body );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.csv', $r->body );
 		self::assertStringContainsString( 'https://example.hr/cjenik/webshop_a_web1_1_20261001_060000.xml', $r->body );
 		self::assertLessThan( strpos( $r->body, '20260930' ), strpos( $r->body, '20261001_060000.xml' ) );
 		self::assertStringContainsString( 'Cjenik', $r->body );
 	}
 
 	public function test_index_json_shape(): void {
+		$this->addV2();
 		$r    = $this->endpoint()->resolve( [ 'scwc_cjenik' => 'json' ], [] );
 		$json = json_decode( $r->body, true );
-		self::assertSame( 'https://example.hr/cjenik/latest.xml', $json['latest']['xml'] );
-		self::assertSame( 'https://example.hr/cjenik/latest.csv', $json['latest']['csv'] );
-		self::assertCount( 3, $json['files'] );
-		self::assertSame( 'https://example.hr/cjenik/webshop_a_web1_1_20261001_060000.csv', $json['files'][0]['url'], 'newest-first (csv added last)' );
+		self::assertSame( 'https://example.hr/cjenik/latest_roba.csv', $json['latest']['roba'] );
+		self::assertSame( 'https://example.hr/cjenik/latest_usluge.csv', $json['latest']['usluge'] );
+		self::assertCount( 5, $json['files'] );
+		self::assertSame( 'https://example.hr/cjenik/1_webshop_ulica-1_web1_USLUGE_1_20261117_0600.csv', $json['files'][0]['url'], 'newest-first (added last)' );
+		self::assertSame( 'usluge', $json['files'][0]['kind'] );
 		self::assertSame( 2, $json['files'][0]['products'] );
 		self::assertArrayNotHasKey( 'reason', $json['files'][0] );
 	}

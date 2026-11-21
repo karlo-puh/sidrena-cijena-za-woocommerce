@@ -51,8 +51,8 @@ final class CollectorTest extends TestCase {
 		}
 		$this->product( [ 'id' => 5, 'name' => 'Usluga', 'regular_price' => '99', 'virtual' => true ] );
 		$calls = [];
-		$pager = function ( int $after, int $per ) use ( &$calls ) {
-			$calls[] = [ $after, $per ];
+		$pager = function ( int $after, int $per, ?array $only ) use ( &$calls ) {
+			$calls[] = [ $after, $per, $only ];
 			return array_slice( array_values( array_filter( [ 1, 2, 3, 4, 5 ], fn( $id ) => $id > $after ) ), 0, $per );
 		};
 		$collector = new Collector( $pager, fn( int $id ) => \wc_get_product( $id ) ?: null, new ProductAdapter( new BrandResolver(), new BarcodeResolver() ), $this->factory(), 2 );
@@ -60,7 +60,7 @@ final class CollectorTest extends TestCase {
 		self::assertCount( 5, $items );
 		self::assertSame( [ 'P1', 'P2', 'P3', 'P4' ], array_map( fn( $i ) => $i->name, array_slice( $items, 0, 4 ) ) );
 		self::assertInstanceOf( ServiceItem::class, $items[4] );
-		self::assertSame( [ [ 0, 2 ], [ 2, 2 ], [ 4, 2 ], [ 5, 2 ] ], $calls );
+		self::assertSame( [ [ 0, 2, null ], [ 2, 2, null ], [ 4, 2, null ], [ 5, 2, null ] ], $calls );
 	}
 
 	public function test_variable_products_are_expanded_into_variations_only(): void {
@@ -72,7 +72,7 @@ final class CollectorTest extends TestCase {
 		self::assertContainsOnlyInstancesOf( Item::class, $items );
 		self::assertSame( [ 'Majica - S', 'Majica - M' ], array_map( fn( Item $i ) => $i->name, $items ) );
 		self::assertSame( 'kom', $items[0]->unit ); // inherited from parent via adapter
-		self::assertSame( 13.0, $items[1]->references['anchor']['amount'] );
+		self::assertSame( 13.0, $items[1]->basePrice );
 	}
 
 	public function test_missing_and_excluded_products_are_skipped(): void {
@@ -121,5 +121,25 @@ final class CollectorTest extends TestCase {
 		$this->product( [ 'id' => 10, 'type' => 'variable', 'status' => 'draft' ] );
 		new \WC_Product_Variation( [ 'id' => 11, 'type' => 'subscription_variation', 'parent_id' => 10, 'regular_price' => '10' ] );
 		self::assertSame( [], $this->collector( [ 1 => [ 11 ] ], 10 )->batch( 0 )['items'] );
+	}
+
+	public function test_items_for_maps_only_listed_ids_and_needs_a_published_parent(): void {
+		$this->product( [ 'id' => 1, 'name' => 'P1', 'regular_price' => '10' ] );
+		$this->product( [ 'id' => 2, 'regular_price' => '10' ] );
+		$this->product( [ 'id' => 10, 'type' => 'variable', 'status' => 'draft', 'children' => [ 11 ] ] );
+		$this->product( [ 'id' => 11, 'type' => 'variation', 'parent_id' => 10, 'regular_price' => '10' ] );
+		$calls     = [];
+		$pager     = function ( int $after, int $limit, ?array $only ) use ( &$calls ) {
+			$calls[] = [ $after, $limit, $only ];
+			return array_values( array_intersect( [ 1, 11 ], $only ?? [] ) ); // 2 is not listed (e.g. a draft).
+		};
+		$collector = new Collector( $pager, fn( int $id ) => \wc_get_product( $id ) ?: null, new ProductAdapter( new BrandResolver(), new BarcodeResolver() ), $this->factory() );
+		$items     = $collector->itemsFor( [ 1, '2', 11, 1, 0 ] );
+		self::assertSame( [ [ 0, 3, [ 1, 2, 11 ] ] ], $calls );
+		self::assertSame( [ 1, 2, 11 ], array_keys( $items ) );
+		self::assertSame( 'P1', $items[1]->name );
+		self::assertNull( $items[2] );
+		self::assertNull( $items[11], 'variation of an unpublished parent' );
+		self::assertSame( [], $collector->itemsFor( [] ) );
 	}
 }

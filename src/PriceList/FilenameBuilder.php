@@ -1,6 +1,8 @@
 <?php
 /**
- * Builds price-list file names: {form}_{address}_{label}_{storage}_{Ymd}_{His}.{ext}.
+ * Price-list file names per Pravilnik o načinu objave cjenika proizvoda (NN 132/2026), čl. 6(3)–(4):
+ * {OIB|MB}_{oblik}_{adresa}_{oznaka}_{ROBA|USLUGE}_{broj pohrane}_{GGGGMMDD_SSMM}.csv, or with one list for all
+ * outlets {OIB|MB}_ZA_SVA_PRODAJNA_MJESTA_{ROBA|USLUGE}_{broj pohrane}_{GGGGMMDD_SSMM}.csv.
  *
  * @package SidrenaCijena
  */
@@ -14,22 +16,29 @@ use SidrenaCijena\Support\Slugifier;
 
 class FilenameBuilder {
 
-	public const PATTERN = '/^[a-z0-9][a-z0-9._-]*\.(xml|csv)$/';
+	public const PATTERN     = '/^[A-Za-z0-9][A-Za-z0-9._-]*\.(xml|csv)$/';
+	public const ALL_OUTLETS = 'ZA_SVA_PRODAJNA_MJESTA';
 
 	/**
-	 * @param DateTimeImmutable $localTime Generation time in the site's timezone.
-	 * @param string            $ext       Extension without dot (xml|csv).
+	 * @param string            $sellerId  OIB (legal entity) or matični broj (natural person).
+	 * @param Outlet|null       $outlet    Null when one list applies to all outlets.
+	 * @param string            $kind      CsvWriter::GOODS or CsvWriter::SERVICES.
+	 * @param int               $number    Broj pohrane: running number of the published file.
+	 * @param DateTimeImmutable $localTime Publication time in the site's timezone.
 	 */
-	public function build( Outlet $outlet, DateTimeImmutable $localTime, string $ext ): string {
-		$parts = [
-			$this->part( $outlet->form ),
-			$this->part( $outlet->address ),
-			$this->part( $outlet->label ),
-			$this->part( $outlet->storageNumber ),
-			$localTime->format( 'Ymd' ),
-			$localTime->format( 'His' ),
-		];
-		return implode( '_', $parts ) . '.' . strtolower( $ext );
+	public function build( string $sellerId, ?Outlet $outlet, string $kind, int $number, DateTimeImmutable $localTime ): string {
+		$parts = [ $this->part( $sellerId ) ];
+		if ( null === $outlet ) {
+			$parts[] = self::ALL_OUTLETS;
+		} else {
+			$parts[] = $this->part( $outlet->form );
+			$parts[] = $this->part( $outlet->address );
+			$parts[] = $this->part( $outlet->label );
+		}
+		$parts[] = CsvWriter::SERVICES === $kind ? 'USLUGE' : 'ROBA';
+		$parts[] = (string) max( 1, $number );
+		$parts[] = $localTime->format( 'Ymd_Hi' );
+		return implode( '_', $parts ) . '.csv';
 	}
 
 	public static function isValid( string $name ): bool {

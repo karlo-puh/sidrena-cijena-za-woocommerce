@@ -101,6 +101,18 @@ final class Fields {
 		return array_merge(
 			[
 				[
+					'path'        => 'price_list.seller_id',
+					'type'        => 'text',
+					'label'       => __( 'OIB / matični broj trgovca', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'OIB za pravnu osobu, matični broj za fizičku osobu. Obvezan dio naziva datoteke cjenika (NN 132/2026, čl. 6). Bez njega se novi cjenik ne objavljuje.', 'sidrena-cijena-za-woocommerce' ),
+				],
+				[
+					'path'        => 'price_list.shared_list',
+					'type'        => 'checkbox',
+					'label'       => __( 'Isti cjenik za sva prodajna mjesta', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Jedan cjenik robe i jedan cjenik usluga s oznakom ZA_SVA_PRODAJNA_MJESTA umjesto zasebnih datoteka po prodajnom objektu. Uključite samo ako su cijene i ponuda jednake na svim prodajnim mjestima.', 'sidrena-cijena-za-woocommerce' ),
+				],
+				[
 					'path'        => 'outlet.form',
 					'type'        => 'text',
 					'label'       => __( 'Oblik prodajnog objekta', 'sidrena-cijena-za-woocommerce' ),
@@ -121,12 +133,6 @@ final class Fields {
 					'description' => __( 'Interna oznaka objekta (npr. naziv web trgovine). Obvezan dio naziva datoteke.', 'sidrena-cijena-za-woocommerce' ),
 				],
 				[
-					'path'        => 'outlet.storage_number',
-					'type'        => 'text',
-					'label'       => __( 'Broj pohrane', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Zadano 1 ako nemate više skladišta.', 'sidrena-cijena-za-woocommerce' ),
-				],
-				[
 					'path'        => 'outlet.merchant_name',
 					'type'        => 'text',
 					'label'       => __( 'Naziv trgovca', 'sidrena-cijena-za-woocommerce' ),
@@ -142,7 +148,7 @@ final class Fields {
 					'type'        => 'outlets',
 					'heading'     => __( 'Dodatni prodajni objekti (poslovnice)', 'sidrena-cijena-za-woocommerce' ),
 					'label'       => __( 'Poslovnice', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Svaki prodajni objekt mora imati vlastitu datoteku cjenika s vlastitim nazivom i arhivom od 30 dana (NN 101/2026, t. VI.), i kad su cijene jednake. Ovdje dodajte fizičke poslovnice; cijene se preuzimaju iz WooCommercea.', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Svaki prodajni objekt ima vlastiti cjenik s vlastitim nazivom (NN 132/2026), osim ako je uključen isti cjenik za sva prodajna mjesta. Ovdje dodajte fizičke poslovnice; cijene se preuzimaju iz WooCommercea.', 'sidrena-cijena-za-woocommerce' ),
 				],
 			],
 			self::referenceType( 'anchor', __( 'Sidrena (dodatna) cijena', 'sidrena-cijena-za-woocommerce' ), true ),
@@ -286,39 +292,29 @@ final class Fields {
 					'path'        => 'price_list.enabled',
 					'type'        => 'checkbox',
 					'label'       => __( 'Objavi strojno čitljiv cjenik', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Obveza za sve trgovce s web stranicom od 17. 11. 2026. (NN 110/2026).', 'sidrena-cijena-za-woocommerce' ),
-				],
-				[
-					'path'    => 'price_list.formats',
-					'type'    => 'multicheck',
-					'label'   => __( 'Formati', 'sidrena-cijena-za-woocommerce' ),
-					'options' => [
-						'xml' => 'XML',
-						'csv' => 'CSV',
-					],
+					'description' => __( 'Obveza za trgovce s web stranicom (Pravilnik o načinu objave cjenika proizvoda, NN 132/2026). Objavljuju se zasebni CSV cjenici robe i usluga.', 'sidrena-cijena-za-woocommerce' ),
 				],
 				[
 					'path'        => 'price_list.slug',
 					'type'        => 'text',
 					'label'       => __( 'Putanja (slug)', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Javna adresa cjenika: /{slug}/latest.xml', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Javne adrese važećih cjenika: /{slug}/latest_roba.csv i /{slug}/latest_usluge.csv', 'sidrena-cijena-za-woocommerce' ),
 					'placeholder' => 'cjenik',
 				],
 				[
 					'path'        => 'price_list.generate_time',
 					'type'        => 'time',
-					'label'       => __( 'Vrijeme dnevnog generiranja', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Cjenik robe mora biti objavljen svaki dan prije 08:00.', 'sidrena-cijena-za-woocommerce' ),
+					'label'       => __( 'Vrijeme dnevne provjere', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Jednom dnevno cijeli cjenik se ponovno izrađuje; novi se objavljuje samo ako se promijenio. Izmijenjeni cjenik mora biti objavljen do 11:00 na dan izmjene.', 'sidrena-cijena-za-woocommerce' ),
 				],
 				[
 					'path'        => 'price_list.regenerate_on_change',
 					'type'        => 'select',
-					'label'       => __( 'Regeneriraj pri promjeni cijene', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Za trgovinu samo robom odaberite „Nikad (samo dnevno)”: promjene cijena tijekom dana ne zahtijevaju novi cjenik. Dnevno generiranje i bilježenje povijesti ostaju uključeni. Dodatno osvježavanje je opcionalno; usluge imaju zasebno pravilo ažuriranja.', 'sidrena-cijena-za-woocommerce' ),
+					'label'       => __( 'Objava pri promjeni proizvoda', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Nakon spremanja proizvoda ažuriraju se samo promijenjeni redovi cjenika i objavljuje se novi cjenik ako se nešto promijenilo. „Samo dnevna provjera” izmjene objavljuje tek pri dnevnoj provjeri.', 'sidrena-cijena-za-woocommerce' ),
 					'options'     => [
-						'services' => __( 'Samo usluge', 'sidrena-cijena-za-woocommerce' ),
-						'all'      => __( 'Svi proizvodi', 'sidrena-cijena-za-woocommerce' ),
-						'never'    => __( 'Nikad (samo dnevno)', 'sidrena-cijena-za-woocommerce' ),
+						'all'   => __( 'Pri promjeni (preporučeno)', 'sidrena-cijena-za-woocommerce' ),
+						'never' => __( 'Samo dnevna provjera', 'sidrena-cijena-za-woocommerce' ),
 					],
 				],
 				[
@@ -331,8 +327,8 @@ final class Fields {
 				[
 					'path'        => 'price_list.retention_days',
 					'type'        => 'number',
-					'label'       => __( 'Čuvanje starih cjenika (dana)', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Zakonski minimum 30 dana.', 'sidrena-cijena-za-woocommerce' ),
+					'label'       => __( 'Čuvanje arhivskih cjenika (dana)', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Koliko dana zamijenjeni cjenik ostaje dostupan. Zakonski minimum 15 dana od zamjene (NN 132/2026, čl. 3(6)).', 'sidrena-cijena-za-woocommerce' ),
 					'min'         => Sanitizer::MIN_RETENTION_DAYS,
 				],
 				[
@@ -358,34 +354,9 @@ final class Fields {
 					],
 				],
 				[
-					'path'        => 'price_list.sale_name_default',
-					'type'        => 'text',
-					'label'       => __( 'Zadani naziv posebnog oblika prodaje', 'sidrena-cijena-za-woocommerce' ),
-					'placeholder' => 'Sniženje',
-				],
-				[
-					'path'    => 'price_list.csv_delimiter',
-					'type'    => 'select',
-					'label'   => __( 'CSV razdjelnik', 'sidrena-cijena-za-woocommerce' ),
-					'options' => [
-						';'  => __( 'Točka-zarez (;)', 'sidrena-cijena-za-woocommerce' ),
-						','  => __( 'Zarez (,)', 'sidrena-cijena-za-woocommerce' ),
-						"\t" => __( 'Tabulator', 'sidrena-cijena-za-woocommerce' ),
-					],
-				],
-				[
 					'path'  => 'price_list.csv_bom',
 					'type'  => 'checkbox',
 					'label' => __( 'CSV s UTF-8 BOM (za Excel)', 'sidrena-cijena-za-woocommerce' ),
-				],
-				[
-					'path'    => 'price_list.tax_mode',
-					'type'    => 'select',
-					'label'   => __( 'Cijene u cjeniku', 'sidrena-cijena-za-woocommerce' ),
-					'options' => [
-						'incl' => __( 'S PDV-om (maloprodajne)', 'sidrena-cijena-za-woocommerce' ),
-						'excl' => __( 'Bez PDV-a', 'sidrena-cijena-za-woocommerce' ),
-					],
 				],
 				[
 					'path'        => 'price_list.external_cron_key',
@@ -464,7 +435,7 @@ final class Fields {
 		$dateDescription = 'anchor' === $key
 			? sprintf(
 				/* translators: 1: default anchor date, 2: FMCG date */
-				__( 'Zadano %1$s (NN 101/2026). Datum za FMCG kategorije koje ste već označavali: %2$s – dodajte ih kao iznimku ispod.', 'sidrena-cijena-za-woocommerce' ),
+				__( 'Zadano %1$s (redovna cijena na taj dan, NN 132/2026). Datum za FMCG kategorije koje ste već označavali: %2$s – dodajte ih kao iznimku ispod.', 'sidrena-cijena-za-woocommerce' ),
 				'10. 9. 2026.',
 				'2. 5. 2025.'
 			)

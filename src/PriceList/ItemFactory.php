@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace SidrenaCijena\PriceList;
 
-use SidrenaCijena\Product\MetaKeys;
 use SidrenaCijena\Product\ProductSnapshot;
 use SidrenaCijena\Product\ServiceRule;
 use SidrenaCijena\Product\UnitPrice;
@@ -33,56 +32,44 @@ class ItemFactory {
 	 * @param ProductSnapshot|null $parent   Parent snapshot for variations.
 	 * @return Item|ServiceItem|null Null when the product is not listed.
 	 */
+	/**
+	 * @return Item|ServiceItem|null Null when the product is not listed.
+	 */
 	public function make( WC_Product $product, ProductSnapshot $snapshot, ?ProductSnapshot $parent ) {
 		if ( ! $this->isListed( $snapshot ) ) {
 			return null;
 		}
-
-		$price    = $this->toDisplay( $product, $snapshot->active );
-		$onSale   = $snapshot->isOnSale;
-		$saleName = '';
-		if ( $onSale ) {
-			$saleName = '' !== $snapshot->saleName ? $snapshot->saleName : (string) $this->settings->get( 'price_list.sale_name_default', '' );
-		}
-		$references = $this->references( $product, $snapshot, $parent );
+		$price = $this->toDisplay( $product, $snapshot->active );
+		$base  = $this->basePrice( $product, $snapshot, $parent );
 
 		if ( $this->serviceRule->isService( $snapshot ) ) {
-			$item = new ServiceItem( $snapshot->name, $price, $onSale, $saleName, $references );
+			$item = new ServiceItem( $snapshot->id, $snapshot->name, $price, $snapshot->isOnSale, $base );
 		} else {
-			$lowest30 = null;
-			$omnibus  = $snapshot->meta( MetaKeys::OMNIBUS_REF_PRICE );
-			if ( $onSale && is_numeric( $omnibus ) ) {
-				$lowest30 = $this->toDisplay( $product, (string) $omnibus );
-			}
-			$item = new Item(
+			// One barcode field in WooCommerce: a GTIN-shaped number is the EAN, anything else the shop's own barcode.
+			$isEan = 1 === preg_match( '/^(?:\d{8}|\d{12,14})$/', $snapshot->barcode );
+			$item  = new Item(
+				$snapshot->id,
 				$snapshot->name,
 				'' !== $snapshot->sku ? $snapshot->sku : (string) $snapshot->id,
 				$snapshot->brand,
+				$snapshot->unitQuantity,
 				$snapshot->unit,
-				UnitPrice::compute( $price, $snapshot->unitQuantity ),
 				$price,
-				$onSale,
-				$saleName,
-				$references,
-				$lowest30,
-				$snapshot->barcode,
-				in_array( $snapshot->stockStatus, [ 'instock', 'onbackorder' ], true ),
-				$snapshot->permalink,
+				$snapshot->isOnSale,
+				UnitPrice::compute( $price, $snapshot->unitQuantity ),
+				$isEan ? '' : $snapshot->barcode,
+				$isEan ? $snapshot->barcode : '',
+				$base,
 			);
 		}
 
-		/** @var Item|ServiceItem|null $item */
 		$item = apply_filters( 'scwc_price_list_item', $item, $snapshot );
 		return ( $item instanceof Item || $item instanceof ServiceItem ) ? $item : null;
 	}
 
-	/** Convert a stored amount to the price-list display amount (tax mode from settings), 2 dp. */
+	/** Retail prices in the public list always include tax (maloprodajna cijena). */
 	public function toDisplay( WC_Product $product, string $amount ): float {
-		$args = [ 'price' => $amount ];
-		$raw  = 'excl' === (string) $this->settings->get( 'price_list.tax_mode', 'incl' )
-			? wc_get_price_excluding_tax( $product, $args )
-			: wc_get_price_including_tax( $product, $args );
-		return round( (float) $raw, 2 );
+		return round( (float) wc_get_price_including_tax( $product, [ 'price' => $amount ] ), 2 );
 	}
 
 	private function isListed( ProductSnapshot $s ): bool {
@@ -107,16 +94,10 @@ class ItemFactory {
 	/**
 	 * @return array<string,array{amount:?float,date:?string}>
 	 */
-	private function references( WC_Product $product, ProductSnapshot $snapshot, ?ProductSnapshot $parent ): array {
+	/** The primary base price (bazna cijena); the optional second type is not part of the legal list. */
+	private function basePrice( WC_Product $product, ProductSnapshot $snapshot, ?ProductSnapshot $parent ): ?float {
 		$inherit = (bool) $this->settings->get( 'reference_prices.variation_inherit_parent', false );
-		$out     = [];
-		foreach ( $this->registry->enabled() as $key => $type ) {
-			$ref         = $this->references->get( $type, $snapshot, $parent, $inherit );
-			$out[ $key ] = [
-				'amount' => $ref->isPresent() ? $this->toDisplay( $product, (string) $ref->amount ) : null,
-				'date'   => $ref->date ? $ref->date->format( 'Y-m-d' ) : null,
-			];
-		}
-		return $out;
+		$ref     = $this->references->get( $this->registry->primary(), $snapshot, $parent, $inherit );
+		return $ref->isPresent() ? $this->toDisplay( $product, (string) $ref->amount ) : null;
 	}
 }

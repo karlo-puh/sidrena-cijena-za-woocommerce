@@ -115,10 +115,9 @@ class SnapshotService {
 		}
 
 		$referenceDate = $req->date ?? $existing->date?->format( DateFormat::ISO ) ?? $type->defaultDate;
+		// Not offered on the reference date: its base price is the price on the day of first offer (NN 132/2026,
+		// 1583), not today's price and not "none" – skip it and leave it to first-offer capture or manual entry.
 		if ( $req->markNaAfterDate && null !== $referenceDate && $this->createdAfter( $snapshot, $referenceDate ) ) {
-			if ( ! $req->dryRun ) {
-				$this->repository->setNa( $type, $snapshot->id, ReferencePriceRepository::SOURCE_SNAPSHOT );
-			}
 			return SnapshotResult::ACTION_MARKED_NA;
 		}
 

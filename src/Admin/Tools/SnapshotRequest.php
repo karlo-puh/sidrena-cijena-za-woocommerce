@@ -23,7 +23,7 @@ final class SnapshotRequest {
 	 * @param string      $mode            One of MODE_*.
 	 * @param bool        $skipOnSale      Skip products currently on sale.
 	 * @param bool        $dryRun          Count only, write nothing.
-	 * @param bool        $markNaAfterDate Mark products created after the reference date as "no reference price".
+	 * @param bool        $markNaAfterDate Skip products created after the reference date (counted as ACTION_MARKED_NA).
 	 */
 	public function __construct(
 		public readonly string $typeKey,

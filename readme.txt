@@ -6,11 +6,11 @@ Tested up to: 6.8
 Requires PHP: 8.1
 WC requires at least: 9.0
 WC tested up to: 9.9
-Stable tag: 1.5.0
+Stable tag: 2.0.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
-Sidrena (dodatna) cijena uz svaku cijenu, najniža cijena u 30 dana prije sniženja i strojno čitljiv cjenik (XML/CSV) prema NN 101/2026 i Zakonu o zaštiti potrošača.
+Sidrena (dodatna) cijena uz svaku cijenu, najniža cijena u 30 dana prije sniženja i strojno čitljiv cjenik (CSV) prema NN 132/2026 i Zakonu o zaštiti potrošača.
 
 == Description ==
 
@@ -18,8 +18,8 @@ Dodatak provodi obveze hrvatskih webshopova koje stupaju na snagu **17. studenog
 
 * **Sidrena (dodatna) cijena** – uz svaku aktualnu cijenu prikazuje se redovna cijena koja je vrijedila na referentni dan (zadano **10. 9. 2026.**; za FMCG kategorije koje ste već označavali može se zadržati **2. 5. 2025.** po kategoriji). Prikaz je jasan, vidljiv i čitljiv, s datumom, na popisu proizvoda, stranici proizvoda, varijacijama, košarici i blagajni (klasični predlošci) te putem podataka Store API-ja za blokovsku košaricu.
 * **Najniža cijena u 30 dana prije sniženja** – dodatak bilježi povijest cijena i za vrijeme svakog sniženja prikazuje najnižu cijenu u 30 dana prije početka sniženja te postotak popusta izračunat iz nje.
-* **Strojno čitljiv cjenik (XML i/ili CSV)** – generira se automatski svaki dan prije 08:00 (zadano u 06:00 po vremenskoj zoni trgovine) i pri svakoj promjeni cijene usluge, objavljuje se na javnom URL-u `/cjenik/` (`/cjenik/latest.xml`, `/cjenik/latest.csv`; putanja je zadana i može se promijeniti u postavkama), s propisanim poljima (naziv, šifra, marka, jedinica mjere, cijena za jedinicu mjere, maloprodajna cijena, posebni oblik prodaje, sidrena cijena, barkod, dostupnost), propisanim nazivom datoteke (oblik prodajnog objekta, adresa, oznaka, broj pohrane, datum i vrijeme) i čuvanjem verzija najmanje 30 dana. Datoteke su dostupne bez prijave i bez zaštite od robota.
-* **Više prodajnih objekata** – uz webshop možete dodati poslovnice (oblik, adresa, oznaka, broj pohrane). Svaki prodajni objekt dobiva vlastitu datoteku s propisanim nazivom, vlastitu arhivu od 30 dana i vlastite adrese (`/cjenik/{oznaka}/latest.xml`), kako traži t. VI. Odluke – i kada su cijene u svim objektima jednake.
+* **Strojno čitljiv cjenik (CSV)** – zaseban cjenik robe i cjenik usluga, objavljuje se pri promjeni cijena ili ponude (najkasnije do 11:00 na dan promjene), uz dnevnu provjeru (zadano u 06:00) koja objavljuje novu datoteku samo ako se cjenik promijenio. Javne adrese: `/cjenik/`, `/cjenik/latest_roba.csv`, `/cjenik/latest_usluge.csv` (stare `/cjenik/latest.csv` i `/cjenik/latest.xml` vode na cjenik robe). Zamijenjene datoteke dostupne su još najmanje 15 dana.
+* **Više prodajnih objekata** – uz webshop možete dodati poslovnice (oblik, adresa, oznaka). Svaki prodajni objekt dobiva vlastiti cjenik s propisanim nazivom i vlastite adrese (`/cjenik/{oznaka}/latest_roba.csv`), ili jedan cjenik „za sva prodajna mjesta”.
 * **Alati** – jednim klikom snimite trenutne redovne cijene kao sidrene cijene (akcijske se cijene nikad ne kopiraju), uvezite sidrene cijene iz CSV-a (šifra → cijena), izvezite ih, te zakažite automatsko snimanje za budući datum (npr. „bazna cijena” od 17. 11. 2026.).
 * **Generički mehanizam referentnih cijena** – uz sidrenu cijenu možete uključiti i drugu referentnu cijenu (bazna cijena) čim ministarstvo objavi pravilnik.
 * WP-CLI naredbe, Action Scheduler, HPOS kompatibilnost, predlošci koje tema može nadjačati, kuke/filtri s prefiksom `scwc_`.
@@ -42,14 +42,18 @@ U blokovskoj košarici i blagajni (WooCommerce Blocks) sidrena cijena prikazuje 
 * Filtri: `scwc_reference_price_types`, `scwc_reference_date`, `scwc_should_render_badge`, `scwc_price_badge_html`, `scwc_is_service`, `scwc_product_brand`, `scwc_barcode_meta_keys`, `scwc_price_list_item`, `scwc_price_list_csv_header`, `scwc_price_list_csv_row`.
 * Akcije: `scwc_price_changed`, `scwc_price_list_generated`, `scwc_snapshot_completed`, `scwc_import_completed`.
 
-== Usklađenost s NN 101/2026 ==
+== Usklađenost s NN 132/2026 ==
 
-**Odluka o objavi cjenika (1213)**
+**Pravilnik o načinu objave cjenika proizvoda (1584)**
 
-* t. II. – XML/CSV na vlastitoj stranici; cjenik robe ažurira se jednom dnevno do 08:00 za tekući radni dan (zadano pokretanje u 06:00). Za katalog robe odaberite „Regeneriraj pri promjeni cijene → Nikad (samo dnevno)”; promjene cijena tijekom dana ne zahtijevaju novi izvoz. Usluge imaju zasebno pravilo ažuriranja pri promjeni. Svaka objavljena verzija čuva se i javno je dostupna najmanje 30 dana (zadano 35). Zakazivanje samo po sebi nije potvrda dovršene objave.
-* t. III./IV. – sva propisana polja za proizvode (naziv, šifra, marka, jedinica mjere, cijena za jedinicu mjere, maloprodajna cijena + posebni oblik prodaje s nazivom, sidrena cijena, barkod, dostupno/nedostupno) i usluge (naziv usluge, maloprodajna cijena + posebni oblik prodaje, sidrena cijena).
-* t. VI. – naziv datoteke sadrži oblik, adresu i oznaku prodajnog objekta, broj pohrane te datum i vrijeme objave; svaki prodajni objekt (webshop i svaka poslovnica) ima vlastitu datoteku i arhivu jedinstvene strukture; u cjenik ulaze svi objavljeni proizvodi s cijenom, uključujući skrivene (dostupni izravnim linkom) i proizvode drugih dodataka (paketi, pretplate).
-* t. VII. – datoteke su dostupne bez prijave i zaštite od robota, s CORS zaglavljima, `no-cache` na `latest.*`, `index.json` za otkrivanje te izravnim adresama datoteka koje ne ovise o postavkama trajnih veza.
+* Cjenik u CSV formatu (UTF-8, odvojnik „;”) na vlastitoj stranici, zasebno za robu i za usluge, s propisanim stupcima: naziv, šifra, marka, neto količina, jedinica mjere, maloprodajna cijena, posebni oblik prodaje (da/ne), cijena za jedinicu mjere, barkod, EAN barkod, bazna cijena (usluge: naziv, maloprodajna cijena, posebni oblik prodaje, bazna cijena).
+* Promijenjeni cjenik objavljuje se na dan promjene najkasnije do 11:00; ako se cijene i ponuda nisu promijenile, nova datoteka se ne objavljuje. Promjene spremljene u WooCommerceu objavljuju se nekoliko minuta nakon spremanja (postavka „Objava pri promjeni proizvoda”); dnevna provjera (zadano 06:00) hvata promjene napravljene mimo WooCommercea.
+* Naziv datoteke: OIB ili matični broj, oblik, adresa i oznaka prodajnog objekta (ili ZA_SVA_PRODAJNA_MJESTA), ROBA ili USLUGE, broj pohrane (redni broj objave) te datum i vrijeme objave (GGGGMMDD_SSMM). Zamijenjena datoteka ostaje dostupna najmanje 15 dana nakon zamjene.
+* Datoteke su dostupne bez prijave i zaštite od robota, s CORS zaglavljima, `no-cache` na `latest_*.csv`, `index.json` za otkrivanje te izravnim adresama datoteka koje ne ovise o postavkama trajnih veza.
+
+**Pravilnik o isticanju bazne cijene (1583)**
+
+* Bazna cijena je redovna cijena na referentni dan (zadano 10. 9. 2026.), nikad akcijska; za proizvod koji tada nije bio u ponudi – cijena na dan prve ponude (dodatak je bilježi automatski za nove proizvode). Snimanje cijena preskače proizvode stvorene nakon referentnog dana.
 
 **Odluka o isticanju dodatne cijene (1212)**
 
@@ -106,6 +110,14 @@ Zadano raspon cijena varijacija; precrtana cijena, najniža cijena u 30 dana i p
 Postavka je namijenjena temama koje pri odabiru varijante zamijene glavnu cijenu proizvoda cijenom odabrane varijante (npr. WoodMart). S klasičnim WooCommerce predloškom koji cijenu odabrane varijante prikazuje ispod glavne, i s blokovskim predloškom proizvoda (blok „Product Price”), ostavite raspon.
 
 == Changelog ==
+
+= 2.0.0 =
+* Cjenik prema Pravilniku o načinu objave cjenika proizvoda (NN 132/2026): samo CSV, zaseban cjenik robe i usluga, novi stupci i nazivi datoteka (OIB/MB, ROBA/USLUGE, broj pohrane, GGGGMMDD_SSMM). Nove postavke: OIB / matični broj trgovca (obavezno) i „Isti cjenik za sva prodajna mjesta”. XML se više ne generira; postojeće datoteke ostaju dostupne dok ne isteknu.
+* Nova datoteka objavljuje se samo kad se cjenik promijeni. Spremanje proizvoda označava samo taj proizvod, pa se pri promjeni ponovno izrađuju samo njegovi redci umjesto cijelog kataloga; cijeli katalog čita se jednom dnevno i nakon skupnih promjena. Rok objave promjena je 11:00.
+* Zamijenjene datoteke brišu se 15 dana (postavka) nakon zamjene; trenutačni cjenik se nikad ne briše.
+* Nove adrese `/cjenik/latest_roba.csv` i `/cjenik/latest_usluge.csv`; `/cjenik/latest.csv` i `/cjenik/latest.xml` vode na cjenik robe.
+* Snimanje cijena više ne označava proizvode stvorene nakon referentnog dana kao „nema referentne cijene” – njihova je bazna cijena cijena prve ponude.
+* Uklonjene postavke: formati, odvojnik CSV-a, porez u cjeniku (cijene su uvijek s PDV-om), zadani naziv posebnog oblika prodaje, broj pohrane prodajnog objekta, polje „Naziv posebnog oblika prodaje” na proizvodu.
 
 = 1.5.0 =
 * Nova postavka „Prikaz najniže cijene u 30 dana” (zadano: zaseban redak, kao dosad). „Oblačić (?) uz precrtanu cijenu”: iznad cijene redak s precrtanom najnižom cijenom u 30 dana, postotkom (ako je uključen) i (?) koji dodirom ili prelaskom mišem prikazuje najnižu cijenu u 30 dana. Radi s tipkovnicom i čitačima zaslona; dodir na (?) ne otvara proizvod.

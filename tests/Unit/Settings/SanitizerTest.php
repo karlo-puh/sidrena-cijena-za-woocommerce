@@ -34,9 +34,9 @@ final class SanitizerTest extends TestCase {
 		self::assertSame( 'poslovnica', $out['outlets']['additional'][0]['form'] );
 	}
 
-	public function test_retention_days_has_legal_minimum_of_30(): void {
-		self::assertSame( 30, $this->sanitize( [ 'price_list' => [ 'retention_days' => '7' ] ] )['price_list']['retention_days'] );
-		self::assertSame( 60, $this->sanitize( [ 'price_list' => [ 'retention_days' => '60' ] ] )['price_list']['retention_days'] );
+	public function test_retention_days_has_legal_minimum_of_15(): void {
+		self::assertSame( 15, $this->sanitize( [ 'price_list' => [ 'retention_days' => '7' ] ] )['price_list']['retention_days'] );
+		self::assertSame( 35, $this->sanitize( [ 'price_list' => [ 'retention_days' => '35' ] ] )['price_list']['retention_days'], 'a saved 1.x value is kept' );
 	}
 
 	public function test_invalid_reference_date_falls_back_to_default(): void {
@@ -74,19 +74,33 @@ final class SanitizerTest extends TestCase {
 
 	public function test_enums_reject_unknown_values(): void {
 		$out = $this->sanitize( [
-			'price_list' => [ 'csv_delimiter' => '|', 'formats' => [ 'xml', 'pdf' ], 'service_rule' => 'nope', 'regenerate_on_change' => 'sometimes' ],
+			'price_list' => [ 'service_rule' => 'nope', 'regenerate_on_change' => 'sometimes' ],
 			'display'    => [ 'checkout' => 'weird', 'position' => 'left' ],
 		] );
-		self::assertSame( ';', $out['price_list']['csv_delimiter'] );
-		self::assertSame( [ 'xml' ], $out['price_list']['formats'] );
 		self::assertSame( 'virtual_or_flag', $out['price_list']['service_rule'] );
 		self::assertSame( 'all', $out['price_list']['regenerate_on_change'] );
 		self::assertSame( 'unit', $out['display']['checkout'] );
 		self::assertSame( 'after', $out['display']['position'] );
 	}
 
-	public function test_formats_never_empty(): void {
-		self::assertSame( [ 'xml', 'csv' ], $this->sanitize( [ 'price_list' => [ 'formats' => [] ] ] )['price_list']['formats'] );
+	public function test_regenerate_on_change_is_all_or_never_and_1x_services_means_all(): void {
+		self::assertSame( 'all', $this->sanitize( [ 'price_list' => [ 'regenerate_on_change' => 'services' ] ] )['price_list']['regenerate_on_change'] );
+		self::assertSame( 'never', $this->sanitize( [ 'price_list' => [ 'regenerate_on_change' => 'never' ] ] )['price_list']['regenerate_on_change'] );
+	}
+
+	public function test_removed_1x_settings_are_dropped(): void {
+		$out = $this->sanitize( [ 'price_list' => [ 'formats' => [ 'xml' ], 'csv_delimiter' => ',', 'tax_mode' => 'excl', 'sale_name_default' => 'Akcija' ] ] );
+		foreach ( [ 'formats', 'csv_delimiter', 'tax_mode', 'sale_name_default' ] as $key ) {
+			self::assertArrayNotHasKey( $key, $out['price_list'], $key );
+		}
+	}
+
+	public function test_seller_id_keeps_digits_only_and_shared_list_is_a_bool(): void {
+		$out = $this->sanitize( [ 'price_list' => [ 'seller_id' => ' HR 123-456 789 01 ', 'shared_list' => '1' ] ] );
+		self::assertSame( '12345678901', $out['price_list']['seller_id'] );
+		self::assertTrue( $out['price_list']['shared_list'] );
+		self::assertSame( '', $this->sanitize( [] )['price_list']['seller_id'] );
+		self::assertFalse( $this->sanitize( [] )['price_list']['shared_list'] );
 	}
 
 	public function test_booleans_are_normalised_from_form_values(): void {

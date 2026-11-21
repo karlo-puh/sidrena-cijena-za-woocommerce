@@ -28,7 +28,8 @@ final class FieldsTest extends TestCase {
 	}
 
 	public function test_every_default_path_has_exactly_one_definition_and_no_unknown_paths(): void {
-		$expected = $this->leafPaths( Defaults::all() );
+		// outlet.storage_number is kept only for saved 1.x data; 2.0 numbers files itself (broj pohrane).
+		$expected = array_values( array_diff( $this->leafPaths( Defaults::all() ), [ 'outlet.storage_number' ] ) );
 		$defined  = array_map( static fn( array $d ) => $d['path'], Fields::all() );
 		sort( $expected );
 		$sorted = $defined;
@@ -61,7 +62,10 @@ final class FieldsTest extends TestCase {
 			self::assertContains( $byPath[ $path ]['type'], [ 'select', 'multicheck' ], $path );
 			self::assertSame( $values, array_keys( $byPath[ $path ]['options'] ), $path );
 		}
-		self::assertSame( 'multicheck', $byPath['price_list.formats']['type'] );
+		self::assertArrayNotHasKey( 'price_list.formats', $byPath, 'CSV only' );
+		self::assertArrayNotHasKey( 'price_list.tax_mode', $byPath, 'list prices always include tax' );
+		self::assertSame( 'text', $byPath['price_list.seller_id']['type'] );
+		self::assertSame( 'checkbox', $byPath['price_list.shared_list']['type'] );
 		self::assertSame( 'textarea', $byPath['display.format']['type'] );
 		self::assertSame( 'textarea', $byPath['display.format_compact']['type'] );
 		self::assertSame( 'category_overrides', $byPath['reference_prices.anchor.category_overrides']['type'] );
@@ -69,7 +73,7 @@ final class FieldsTest extends TestCase {
 		self::assertSame( 'checkbox', $byPath['reference_prices.base.enabled']['type'] );
 		self::assertSame( 'readonly', $byPath['reference_prices.anchor.auto_snapshot_done']['type'] );
 		self::assertSame( 'datetime-local', $byPath['reference_prices.anchor.auto_snapshot_at']['type'] );
-		self::assertSame( 30, $byPath['price_list.retention_days']['min'] );
+		self::assertSame( 15, $byPath['price_list.retention_days']['min'] );
 		self::assertSame( 'time', $byPath['price_list.generate_time']['type'] );
 		self::assertStringContainsString( '2. 5. 2025.', $byPath['reference_prices.anchor.date']['description'] );
 	}

@@ -95,11 +95,11 @@ class Scheduler {
 		}
 		$now = $this->clock->now()->getTimestamp();
 		$at  = $now + max( 0, $delaySeconds );
-		// Services must be republished by 08:00 on the day of the change (NN 101/2026 t. II.): never let the
-		// debounce push a pre-08:00 change past the deadline (07:55 safety margin).
+		// A changed list must be published by 11:00 on the day of the change (NN 132/2026, 1584): never let the
+		// debounce push a pre-11:00 change past the deadline (10:55 safety margin).
 		$local    = $this->clock->nowLocal();
-		$deadline = $local->setTime( 8, 0, 0 )->getTimestamp();
-		$margin   = $local->setTime( 7, 55, 0 )->getTimestamp();
+		$deadline = $local->setTime( 11, 0, 0 )->getTimestamp();
+		$margin   = $local->setTime( 10, 55, 0 )->getTimestamp();
 		if ( $now < $deadline && $at > $margin ) {
 			$at = $now;
 		}

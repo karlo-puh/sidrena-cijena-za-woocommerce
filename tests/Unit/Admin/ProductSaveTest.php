@@ -32,7 +32,7 @@ final class ProductSaveTest extends TestCase {
 			'scwc_is_service'                => 'yes',
 			'scwc_unit'                      => ' kg ',
 			'scwc_unit_quantity'             => '0,5',
-			'scwc_sale_name'                 => 'Black Friday',
+			'scwc_sale_name'                 => 'Black Friday', // Field removed in 2.0: ignored.
 			'scwc_exclude_from_price_list'   => 'yes',
 			'scwc_price_on_request'          => 'yes',
 		];
@@ -43,7 +43,7 @@ final class ProductSaveTest extends TestCase {
 		self::assertSame( 'yes', $out['_scwc_is_service'] );
 		self::assertSame( 'kg', $out['_scwc_unit'] );
 		self::assertSame( '0.5', $out['_scwc_unit_quantity'] );
-		self::assertSame( 'Black Friday', $out['_scwc_sale_name'] );
+		self::assertArrayNotHasKey( '_scwc_sale_name', $out );
 		self::assertSame( 'yes', $out['_scwc_exclude_from_price_list'] );
 		self::assertSame( 'yes', $out['_scwc_price_on_request'] );
 		self::assertArrayNotHasKey( '_scwc_ref_base_price', $out, 'base type disabled' );
@@ -60,7 +60,6 @@ final class ProductSaveTest extends TestCase {
 		self::assertNull( $out['_scwc_exclude_from_price_list'] );
 		self::assertNull( $out['_scwc_price_on_request'] );
 		self::assertNull( $out['_scwc_unit'] );
-		self::assertNull( $out['_scwc_sale_name'] );
 	}
 
 	public function test_general_fields_untouched_without_marker(): void {

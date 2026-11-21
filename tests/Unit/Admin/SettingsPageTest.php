@@ -22,7 +22,7 @@ final class SettingsPageTest extends TestCase {
 			->with( 'outlet.address', 'Ilica 1, Zagreb' )
 			->with( 'outlet.label', 'Moja Trgovina' )
 			->with( 'outlet.key', 'moja-trgovina' )
-			->with( 'price_list.formats', [ 'csv' ] )
+			->with( 'price_list.seller_id', '12345678901' )
 			->with( 'price_list.external_cron_key', 'k3y' )
 			->with( 'display.loop', false )
 			->with( 'reference_prices.base.enabled', true )
@@ -93,7 +93,7 @@ final class SettingsPageTest extends TestCase {
 		self::assertSame( 'array', $reg['args']['type'] );
 		self::assertIsCallable( $reg['args']['sanitize_callback'] );
 		self::assertSame( Defaults::all(), $reg['args']['default'] );
-		self::assertSame( 30, ( $reg['args']['sanitize_callback'] )( [ 'price_list' => [ 'retention_days' => 2 ] ] )['price_list']['retention_days'] );
+		self::assertSame( 15, ( $reg['args']['sanitize_callback'] )( [ 'price_list' => [ 'retention_days' => 2 ] ] )['price_list']['retention_days'] );
 	}
 
 	public function test_assets_enqueued_only_on_own_screen(): void {
@@ -122,10 +122,11 @@ final class SettingsPageTest extends TestCase {
 		self::assertStringContainsString( 'name="scwc_settings[_tab]" value="outlet"', $html );
 		self::assertStringContainsString( 'name="scwc_settings[outlet][address]" value="Ilica 1, Zagreb"', $html );
 		self::assertStringContainsString( 'type="submit"', $html );
-		self::assertStringContainsString( 'webshop_ilica-1-zagreb_moja-trgovina_1_YYYYMMDD_HHMMSS.xml', $html );
+		self::assertStringContainsString( '12345678901_webshop_ilica-1-zagreb_moja-trgovina_ROBA_{broj}_GGGGMMDD_SSMM.csv', $html );
 		self::assertStringContainsString( 'https://example.hr/cjenik/', $html );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.xml', $html );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.csv', $html );
+		self::assertStringContainsString( 'https://example.hr/cjenik/latest_roba.csv', $html );
+		self::assertStringContainsString( 'https://example.hr/cjenik/latest_usluge.csv', $html );
+		self::assertStringNotContainsString( 'latest.xml', $html );
 		self::assertStringNotContainsString( '<select id="scwc_settings_display_position"', $html, 'other tabs rendered only as hidden inputs' );
 		self::assertStringContainsString( '<input type="hidden" name="scwc_settings[display][position]" value="after" />', $html );
 	}
@@ -135,10 +136,10 @@ final class SettingsPageTest extends TestCase {
 		$html           = $this->renderTab( 'outlet' );
 		self::assertStringContainsString( 'scwc-outlets', $html );
 		self::assertStringContainsString( 'name="scwc_settings[outlets][additional][0][label]" value="ZG-02"', $html );
-		self::assertStringContainsString( 'poslovnica_vukovarska-5_zg-02_3_YYYYMMDD_HHMMSS.xml', $html );
-		self::assertStringContainsString( 'https://example.hr/cjenik/zg-02/latest.xml', $html );
-		self::assertStringContainsString( 'https://example.hr/cjenik/moja-trgovina/latest.xml', $html );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.xml', $html );
+		self::assertStringContainsString( '12345678901_poslovnica_vukovarska-5_zg-02_ROBA_{broj}_GGGGMMDD_SSMM.csv', $html );
+		self::assertStringContainsString( 'https://example.hr/cjenik/zg-02/latest_roba.csv', $html );
+		self::assertStringContainsString( 'https://example.hr/cjenik/moja-trgovina/latest_roba.csv', $html );
+		self::assertStringContainsString( 'https://example.hr/cjenik/latest_roba.csv', $html );
 	}
 
 	public function test_hidden_inputs_carry_outlet_rows_to_other_tabs(): void {
@@ -148,17 +149,19 @@ final class SettingsPageTest extends TestCase {
 		self::assertStringNotContainsString( 'scwc_settings[outlets]', $this->page()->hiddenInputsForOtherTabs( 'outlet' ), 'outlets belong to the outlet tab' );
 	}
 
-	public function test_filename_preview_uses_na_for_empty_parts(): void {
+	public function test_filename_preview_uses_placeholders_for_empty_parts_and_the_shared_name(): void {
 		$this->settings = new Settings( Defaults::all() );
-		self::assertSame( 'webshop_na_na_1_YYYYMMDD_HHMMSS.xml', $this->page()->filenamePreview() );
+		self::assertMatchesRegularExpression( '/^OIB_webshop_na_na_ROBA_\{broj\}_GGGGMMDD_SSMM\.csv$/i', $this->page()->filenamePreview() );
+		$this->settings = $this->settings->with( 'price_list.seller_id', '12345678901' )->with( 'price_list.shared_list', true );
+		self::assertSame( '12345678901_ZA_SVA_PRODAJNA_MJESTA_ROBA_{broj}_GGGGMMDD_SSMM.csv', $this->page()->filenamePreview() );
 	}
 
 	public function test_hidden_inputs_for_other_tabs_cover_nested_and_list_values(): void {
 		$html = $this->page()->hiddenInputsForOtherTabs( 'display' );
 		self::assertStringNotContainsString( '[display]', $html );
 		self::assertStringContainsString( 'name="scwc_settings[outlet][address]" value="Ilica 1, Zagreb"', $html );
-		self::assertStringContainsString( 'name="scwc_settings[price_list][formats][]" value="csv"', $html );
-		self::assertStringNotContainsString( 'name="scwc_settings[price_list][formats][]" value="xml"', $html );
+		self::assertStringContainsString( 'name="scwc_settings[price_list][seller_id]" value="12345678901"', $html );
+		self::assertStringNotContainsString( '[price_list][formats]', $html );
 		self::assertStringContainsString( 'name="scwc_settings[price_list][enabled]" value="1"', $html );
 		self::assertStringContainsString( 'name="scwc_settings[advanced][debug_log]" value="0"', $html );
 		self::assertStringContainsString( 'name="scwc_settings[reference_prices][anchor][category_overrides][0][term_ids][]" value="12"', $html );
@@ -223,7 +226,12 @@ final class SettingsPageTest extends TestCase {
 		self::assertStringContainsString( 'action=scwc_run_sweep', $html );
 		self::assertStringContainsString( 'action=scwc_reschedule', $html );
 		self::assertStringContainsString( 'Generiraj sada', $html );
-		self::assertMatchesRegularExpression( '/name="scwc_settings\[price_list\]\[formats\]\[\]" value="csv" checked/', $html );
+		self::assertStringContainsString( 'type="text" id="scwc_settings_price_list_seller_id" name="scwc_settings[price_list][seller_id]" value="12345678901"', $html );
+		self::assertStringContainsString( 'name="scwc_settings[price_list][shared_list]"', $html );
+		self::assertStringNotContainsString( '[price_list][formats]', $html );
+		self::assertStringNotContainsString( '[price_list][csv_delimiter]', $html );
+		self::assertStringNotContainsString( '[price_list][tax_mode]', $html );
+		self::assertStringNotContainsString( '[price_list][sale_name_default]', $html );
 	}
 
 	public function test_price_list_tab_without_status_provider_says_no_data(): void {

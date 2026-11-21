@@ -19,7 +19,6 @@ final class ProductFieldsTest extends TestCase {
 		}
 		return new ProductFields(
 			ReferencePriceRegistry::fromSettings( $settings ),
-			$settings,
 			static fn( int $id, string $key ) => $meta[ $key ] ?? '',
 			static fn() => 42,
 		);
@@ -62,7 +61,7 @@ final class ProductFieldsTest extends TestCase {
 
 	public function test_pricing_label_without_date_when_type_has_no_default_date(): void {
 		$settings = ( new Settings( Defaults::all() ) )->with( 'reference_prices.base.enabled', true );
-		$fields   = new ProductFields( ReferencePriceRegistry::fromSettings( $settings ), $settings, static fn() => '', static fn() => 1 );
+		$fields   = new ProductFields( ReferencePriceRegistry::fromSettings( $settings ), static fn() => '', static fn() => 1 );
 		$html     = $this->capture( fn() => $fields->renderPricing() );
 		self::assertStringContainsString( '>Bazna cijena na dan (€)<', $html );
 	}
@@ -81,9 +80,7 @@ final class ProductFieldsTest extends TestCase {
 		self::assertStringContainsString( 'Jedinica mjere (kg, l, m, kom)', $html );
 		self::assertStringContainsString( 'name="scwc_unit_quantity" value="0.5" data-type="decimal"', $html );
 		self::assertStringContainsString( 'Neto količina u jedinici mjere', $html );
-		self::assertStringContainsString( 'name="scwc_sale_name" value="Akcija"', $html );
-		self::assertStringContainsString( 'placeholder="Sniženje"', $html, 'default sale name from settings' );
-		self::assertStringContainsString( 'Naziv posebnog oblika prodaje', $html );
+		self::assertStringNotContainsString( 'scwc_sale_name', $html, 'sale name is not part of the 2.0 list' );
 		self::assertStringContainsString( 'name="scwc_exclude_from_price_list" value="yes"', $html );
 		self::assertStringContainsString( 'Isključi iz cjenika', $html );
 		self::assertStringContainsString( 'name="scwc_price_on_request" value="yes"', $html );
@@ -104,7 +101,7 @@ final class ProductFieldsTest extends TestCase {
 		$GLOBALS['post'] = (object) [ 'ID' => 7 ];
 		\Brain\Monkey\Functions\expect( 'get_post_meta' )->atLeast()->once()->with( 7, \Mockery::type( 'string' ), true )->andReturn( '' );
 		$settings = new Settings( Defaults::all() );
-		$html     = $this->capture( fn() => ( new ProductFields( ReferencePriceRegistry::fromSettings( $settings ), $settings ) )->renderPricing() );
+		$html     = $this->capture( fn() => ( new ProductFields( ReferencePriceRegistry::fromSettings( $settings ) ) )->renderPricing() );
 		self::assertStringContainsString( 'scwc_ref_anchor_price', $html );
 		unset( $GLOBALS['post'] );
 	}

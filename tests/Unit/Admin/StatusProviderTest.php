@@ -26,8 +26,8 @@ final class StatusProviderTest extends TestCase {
 		self::assertContains( 'Zadnje generiranje', $labels );
 		self::assertStringContainsString( '1. 10. 2026. 06:00', $values );
 		self::assertStringContainsString( '10 proizvoda, 2 usluge', $values );
-		self::assertStringContainsString( 'https://example.hr/cjenik/latest.xml', $values );
-		self::assertStringContainsString( 'https://example.hr/cjenik/zg-02/latest.xml', $values );
+		self::assertStringContainsString( 'https://example.hr/cjenik/latest_roba.csv', $values );
+		self::assertStringContainsString( 'https://example.hr/cjenik/zg-02/latest_usluge.csv', $values );
 		self::assertStringContainsString( 'ZG-02', $values );
 		self::assertStringContainsString( 'scwc_run=1&amp;key=k', $values );
 		self::assertStringContainsString( 'Action Scheduler', $values );

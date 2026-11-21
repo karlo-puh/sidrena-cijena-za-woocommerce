@@ -72,7 +72,6 @@ class ProductSave {
 		$out[ MetaKeys::IS_SERVICE ]       = 'yes' === $this->raw( $post, 'scwc_is_service', null ) ? 'yes' : 'no';
 		$out[ MetaKeys::UNIT ]             = $this->text( $post, 'scwc_unit' );
 		$out[ MetaKeys::UNIT_QUANTITY ]    = ( '' !== $qty && (float) $qty > 0 ) ? $qty : null;
-		$out[ MetaKeys::SALE_NAME ]        = $this->text( $post, 'scwc_sale_name' );
 		$out[ MetaKeys::EXCLUDE ]          = 'yes' === $this->raw( $post, 'scwc_exclude_from_price_list', null ) ? 'yes' : null;
 		$out[ MetaKeys::PRICE_ON_REQUEST ] = 'yes' === $this->raw( $post, 'scwc_price_on_request', null ) ? 'yes' : null;
 		return $out;

@@ -112,11 +112,11 @@ final class StorageTest extends TestCase {
 	public function test_list_files_returns_only_matching_names_sorted(): void {
 		$s = $this->storage();
 		$s->ensure();
-		foreach ( [ 'b_20261002_060000.xml', 'a_20261001_060000.csv', 'manifest.json', 'index.php', 'Bad.xml' ] as $f ) {
+		foreach ( [ 'b_20261002_060000.xml', 'a_20261001_060000.csv', 'manifest.json', 'index.php', 'Bad.xml', '-bad.xml' ] as $f ) {
 			file_put_contents( $this->dir . '/' . $f, 'x' );
 		}
 		file_put_contents( $this->dir . '/tmp/c_20261003_060000.xml', 'x' );
-		self::assertSame( [ 'a_20261001_060000.csv', 'b_20261002_060000.xml' ], $s->listFiles() );
+		self::assertSame( [ 'Bad.xml', 'a_20261001_060000.csv', 'b_20261002_060000.xml' ], $s->listFiles(), 'uppercase is valid (ROBA/USLUGE)' );
 	}
 
 	public function test_list_files_on_missing_dir_is_empty(): void {

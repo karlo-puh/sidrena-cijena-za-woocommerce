@@ -27,7 +27,6 @@ class ProductFields {
 	 */
 	public function __construct(
 		private readonly ReferencePriceRegistry $registry,
-		private readonly Settings $settings,
 		?callable $metaReader = null,
 		?callable $postIdProvider = null
 	) {
@@ -104,15 +103,6 @@ class ProductFields {
 				'description' => __( 'Cijena za jedinicu mjere = cijena / neto količina.', 'sidrena-cijena-za-woocommerce' ),
 				'data_type'   => 'decimal',
 				'value'       => $this->meta( $id, MetaKeys::UNIT_QUANTITY ),
-			]
-		);
-		woocommerce_wp_text_input(
-			[
-				'id'          => 'scwc_sale_name',
-				'label'       => __( 'Naziv posebnog oblika prodaje', 'sidrena-cijena-za-woocommerce' ),
-				'description' => __( 'Npr. sniženje, akcija, rasprodaja. Prazno = zadani naziv iz postavki.', 'sidrena-cijena-za-woocommerce' ),
-				'placeholder' => (string) $this->settings->get( 'price_list.sale_name_default', '' ),
-				'value'       => $this->meta( $id, MetaKeys::SALE_NAME ),
 			]
 		);
 		woocommerce_wp_checkbox(

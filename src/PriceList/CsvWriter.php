@@ -1,6 +1,7 @@
 <?php
 /**
- * Writes the price list as CSV (products and services in one file, first column "vrsta").
+ * Writes one price-list file (goods or services) as CSV: UTF-8, ";" separator, columns in the order of
+ * Pravilnik o načinu objave cjenika proizvoda (NN 132/2026), čl. 3 i 6.
  *
  * @package SidrenaCijena
  */
@@ -9,24 +10,24 @@ declare(strict_types=1);
 
 namespace SidrenaCijena\PriceList;
 
-use DateTimeImmutable;
 use RuntimeException;
-use SidrenaCijena\Reference\ReferencePriceType;
 use SidrenaCijena\Support\Money;
 
-class CsvWriter implements Writer {
+class CsvWriter {
+
+	public const GOODS    = 'roba';
+	public const SERVICES = 'usluge';
+	public const KINDS    = [ self::GOODS, self::SERVICES ];
 
 	private const BOM = "\xEF\xBB\xBF";
 
-	public function __construct(
-		private readonly string $delimiter = ';',
-		private readonly bool $bom = true,
-	) {}
+	public function __construct( private readonly bool $bom = true ) {}
 
 	/**
-	 * {@inheritDoc}
+	 * @param iterable<Item|ServiceItem> $items Rows of both kinds; only those of $kind are written.
+	 * @param string                     $kind  self::GOODS or self::SERVICES.
 	 */
-	public function write( iterable $items, Outlet $outlet, DateTimeImmutable $generatedAtLocal, string $path, array $types ): WriteStats {
+	public function write( iterable $items, string $kind, string $path ): int {
 		$fh = fopen( $path, 'wb' );
 		if ( false === $fh ) {
 			throw new RuntimeException( esc_html( sprintf( /* translators: %s: file path */ __( 'Nije moguće pisati u datoteku %s.', 'sidrena-cijena-za-woocommerce' ), $path ) ) );
@@ -35,99 +36,61 @@ class CsvWriter implements Writer {
 			if ( $this->bom && strlen( self::BOM ) !== fwrite( $fh, self::BOM ) ) {
 				throw new RuntimeException( 'Unable to write price-list CSV.' );
 			}
-
-			/** @var string[] $header */
-			$header = apply_filters( 'scwc_price_list_csv_header', $this->header( $types ) );
-			$this->line( $fh, $header );
-
-			$products = 0;
-			$services = 0;
+			$this->line( $fh, (array) apply_filters( 'scwc_price_list_csv_header', $this->header( $kind ), $kind ) );
+			$rows = 0;
 			foreach ( $items as $item ) {
-				if ( $item instanceof Item ) {
-					$row = $this->productRow( $item, $types );
-					++$products;
-				} elseif ( $item instanceof ServiceItem ) {
-					$row = $this->serviceRow( $item, $types );
-					++$services;
+				if ( self::GOODS === $kind && $item instanceof Item ) {
+					$row = $this->goodsRow( $item );
+				} elseif ( self::SERVICES === $kind && $item instanceof ServiceItem ) {
+					$row = $this->serviceRow( $item );
 				} else {
 					continue;
 				}
-				/** @var array<int,string> $row */
-				$row = apply_filters( 'scwc_price_list_csv_row', $row, $item );
-				$this->line( $fh, $row );
+				$this->line( $fh, (array) apply_filters( 'scwc_price_list_csv_row', $row, $item ) );
+				++$rows;
 			}
 			if ( ! fflush( $fh ) ) {
 				throw new RuntimeException( 'Unable to flush price-list CSV.' );
 			}
-			return new WriteStats( $products, $services );
+			return $rows;
 		} finally {
 			fclose( $fh );
 		}
 	}
 
 	/**
-	 * @param ReferencePriceType[] $types Types in order.
 	 * @return string[]
 	 */
-	public function header( array $types ): array {
-		$header = [ 'vrsta', 'naziv', 'šifra', 'marka', 'jedinica_mjere', 'cijena_za_jedinicu_mjere', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje' ];
-		foreach ( $types as $type ) {
-			$header[] = $type->csvColumn;
-			$header[] = $type->csvColumn . '_datum';
-		}
-		return array_merge( $header, [ 'najniža_cijena_30_dana', 'barkod', 'dostupnost', 'url' ] );
+	public function header( string $kind ): array {
+		return self::SERVICES === $kind
+			? [ 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'bazna_cijena' ]
+			: [ 'naziv', 'sifra', 'marka', 'neto_kolicina', 'jedinica_mjere', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'cijena_za_jedinicu_mjere', 'barkod', 'ean_barkod', 'bazna_cijena' ];
 	}
 
 	/**
-	 * @param ReferencePriceType[] $types Types in order.
 	 * @return string[]
 	 */
-	private function productRow( Item $item, array $types ): array {
-		$row   = [
-			'proizvod',
+	private function goodsRow( Item $item ): array {
+		return [
 			$item->name,
 			$item->sku,
 			$item->brand,
+			null === $item->netQuantity ? '' : rtrim( rtrim( Money::toDecimal( $item->netQuantity, 3 ), '0' ), '.' ),
 			$item->unit,
-			$this->money( $item->unitPrice ),
 			$this->money( $item->price ),
 			$item->isSpecialSale ? 'da' : 'ne',
-			$item->saleName,
+			$this->money( $item->unitPrice ),
+			$item->barcode,
+			$item->ean,
+			$this->money( $item->basePrice ),
 		];
-		$row   = array_merge( $row, $this->referenceColumns( $item->references, $types ) );
-		$row[] = $this->money( $item->lowest30 );
-		$row[] = $item->barcode;
-		$row[] = $item->available ? 'dostupno' : 'nedostupno';
-		$row[] = $item->url;
-		return $row;
 	}
 
 	/**
-	 * @param ReferencePriceType[] $types Types in order.
 	 * @return string[]
 	 */
-	private function serviceRow( ServiceItem $item, array $types ): array {
-		$row = [ 'usluga', $item->name, '', '', '', '', $this->money( $item->price ), $item->isSpecialSale ? 'da' : 'ne', $item->saleName ];
-		$row = array_merge( $row, $this->referenceColumns( $item->references, $types ) );
-		return array_merge( $row, [ '', '', '', '' ] );
-	}
-
-	/**
-	 * @param array<string,array{amount:?float,date:?string}> $references Row references.
-	 * @param ReferencePriceType[]                             $types      Types in order.
-	 * @return string[]
-	 */
-	private function referenceColumns( array $references, array $types ): array {
-		$cols = [];
-		foreach ( $types as $type ) {
-			$ref    = $references[ $type->key ] ?? [
-				'amount' => null,
-				'date'   => null,
-			];
-			$cols[] = $this->money( $ref['amount'] );
-			$cols[] = (string) ( $ref['date'] ?? '' );
-		}
-		return $cols;
+	private function serviceRow( ServiceItem $item ): array {
+		return [ $item->name, $this->money( $item->price ), $item->isSpecialSale ? 'da' : 'ne', $this->money( $item->basePrice ) ];
 	}
 
 	/**
@@ -135,7 +98,7 @@ class CsvWriter implements Writer {
 	 * @param string[] $fields Row.
 	 */
 	private function line( $fh, array $fields ): void {
-		if ( false === fputcsv( $fh, array_map( 'strval', $fields ), $this->delimiter, '"', '', "\n" ) ) {
+		if ( false === fputcsv( $fh, array_map( 'strval', $fields ), ';', '"', '', "\n" ) ) {
 			throw new RuntimeException( 'Unable to write price-list CSV row.' );
 		}
 	}

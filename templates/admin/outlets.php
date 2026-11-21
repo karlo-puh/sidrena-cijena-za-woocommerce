@@ -11,10 +11,9 @@ defined( 'ABSPATH' ) || exit;
 
 $scwc_outlet_row = static function ( string $name, string $index, array $row ): void {
 	$fields = [
-		'form'           => [ __( 'Oblik (npr. poslovnica, prodavaonica, kiosk)', 'sidrena-cijena-za-woocommerce' ), 'poslovnica' ],
-		'address'        => [ __( 'Adresa', 'sidrena-cijena-za-woocommerce' ), '' ],
-		'label'          => [ __( 'Oznaka prodajnog objekta', 'sidrena-cijena-za-woocommerce' ), '' ],
-		'storage_number' => [ __( 'Broj pohrane', 'sidrena-cijena-za-woocommerce' ), '1' ],
+		'form'    => [ __( 'Oblik (npr. poslovnica, prodavaonica, kiosk)', 'sidrena-cijena-za-woocommerce' ), 'poslovnica' ],
+		'address' => [ __( 'Adresa', 'sidrena-cijena-za-woocommerce' ), '' ],
+		'label'   => [ __( 'Oznaka prodajnog objekta', 'sidrena-cijena-za-woocommerce' ), '' ],
 	];
 	?>
 	<div class="scwc-outlets__row" data-index="<?php echo esc_attr( $index ); ?>">

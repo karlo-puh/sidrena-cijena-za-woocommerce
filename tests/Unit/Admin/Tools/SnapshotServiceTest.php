@@ -117,11 +117,10 @@ final class SnapshotServiceTest extends TestCase {
 		$this->service( [ 1 => [ 1 ] ] )->run( $this->request( [ 'date' => '2026-09-01' ] ), 1, 100 );
 	}
 
-	public function test_marks_na_when_created_after_reference_date(): void {
-		// 2026-09-10 23:30 UTC is 2026-09-11 in Europe/Zagreb → after the anchor date.
+	public function test_skips_products_created_after_reference_date_without_marking_them(): void {
+		// 2026-09-10 23:30 UTC is 2026-09-11 in Europe/Zagreb → after the anchor date: base price = first offer.
 		$this->product( [ 'id' => 3, 'regular_price' => '10', 'date_created' => new \WC_DateTime( '2026-09-10 23:30:00', new \DateTimeZone( 'UTC' ) ) ] );
-		Functions\expect( 'update_post_meta' )->once()->with( 3, '_scwc_ref_anchor_na', '1' );
-		Functions\expect( 'update_post_meta' )->once()->with( 3, '_scwc_ref_anchor_source', 'snapshot' );
+		Functions\expect( 'update_post_meta' )->never();
 		$this->recorder->shouldNotReceive( 'record' );
 
 		$result = $this->service( [ 1 => [ 3 ] ] )->run( $this->request(), 1, 100 );

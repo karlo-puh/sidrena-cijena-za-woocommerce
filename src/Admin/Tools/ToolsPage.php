@@ -74,7 +74,7 @@ class ToolsPage {
 						'skipped_existing' => __( 'preskočeno – već postoji', 'sidrena-cijena-za-woocommerce' ),
 						'skipped_on_sale'  => __( 'preskočeno – na akciji', 'sidrena-cijena-za-woocommerce' ),
 						'skipped_no_price' => __( 'preskočeno – bez cijene', 'sidrena-cijena-za-woocommerce' ),
-						'marked_na'        => __( 'označeno – bez referentne cijene', 'sidrena-cijena-za-woocommerce' ),
+						'marked_na'        => __( 'preskočeno – novi proizvod (cijena prve ponude)', 'sidrena-cijena-za-woocommerce' ),
 					],
 				],
 			]

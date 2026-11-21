@@ -50,6 +50,7 @@ use SidrenaCijena\Lifecycle\Requirements;
 use SidrenaCijena\Lifecycle\Upgrader;
 use SidrenaCijena\Notices\AdminNotices;
 use SidrenaCijena\Notices\Environment;
+use SidrenaCijena\PriceList\ChangeTracker;
 use SidrenaCijena\PriceList\Collector;
 use SidrenaCijena\PriceList\CsvWriter;
 use SidrenaCijena\PriceList\FilenameBuilder;
@@ -59,7 +60,6 @@ use SidrenaCijena\PriceList\Manifest;
 use SidrenaCijena\PriceList\Outlets;
 use SidrenaCijena\PriceList\Retention;
 use SidrenaCijena\PriceList\Storage;
-use SidrenaCijena\PriceList\XmlWriter;
 use SidrenaCijena\Product\BarcodeResolver;
 use SidrenaCijena\Product\BrandResolver;
 use SidrenaCijena\Product\ProductAdapter;
@@ -172,6 +172,9 @@ final class Plugin {
 		// Price list endpoint + scheduling.
 		$this->get( Endpoint::class )->register();
 		$this->get( ServiceChangeDebouncer::class )->register();
+		if ( (bool) $this->get( Settings::class )->get( 'price_list.enabled', true ) ) {
+			$this->get( ChangeTracker::class )->register();
+		}
 		$this->get( JobRunner::class )->register();
 		$this->get( Scheduler::class )->registerWatchdog();
 		$this->get( GitHubUpdater::class )->register();
@@ -367,16 +370,13 @@ final class Plugin {
 					$settings,
 					static fn(): array => Outlets::fromSettings( $settings ),
 					$c->get( Collector::class ),
-					[
-						'xml' => new XmlWriter(),
-						'csv' => new CsvWriter( (string) $settings->get( 'price_list.csv_delimiter', ';' ), (bool) $settings->get( 'price_list.csv_bom', true ) ),
-					],
+					new CsvWriter( (bool) $settings->get( 'price_list.csv_bom', true ) ),
 					new FilenameBuilder(),
 					$c->get( Storage::class ),
 					$c->get( Manifest::class ),
 					$c->get( Retention::class ),
 					$c->get( Clock::class ),
-					$c->get( ReferencePriceRegistry::class ),
+					$c->get( ChangeTracker::class ),
 				);
 			}
 		);
@@ -399,7 +399,20 @@ final class Plugin {
 		// Scheduling.
 		$c->set( SchedulerBackend::class, static fn() => ActionSchedulerBackend::available() ? new ActionSchedulerBackend() : new WpCronBackend() );
 		$c->set( Scheduler::class, static fn( Container $c ) => new Scheduler( $c->get( SchedulerBackend::class ), $c->get( Settings::class ), $c->get( Clock::class ) ) );
-		$c->set( ServiceChangeDebouncer::class, static fn( Container $c ) => new ServiceChangeDebouncer( $c->get( Scheduler::class ), $c->get( Settings::class ), $c->get( ServiceRule::class ) ) );
+		$c->set( ServiceChangeDebouncer::class, static fn( Container $c ) => new ServiceChangeDebouncer( $c->get( Scheduler::class ), $c->get( Settings::class ) ) );
+		$c->set(
+			ChangeTracker::class,
+			static fn( Container $c ) => new ChangeTracker(
+				$GLOBALS['wpdb'],
+				static function () use ( $c ): void {
+					$settings = $c->get( Settings::class );
+					if ( (bool) $settings->get( 'price_list.enabled', true ) && 'never' !== $settings->get( 'price_list.regenerate_on_change', 'all' ) ) {
+						$c->get( Scheduler::class )->scheduleGenerationSoon( (int) $settings->get( 'price_list.debounce_seconds', 300 ), 'change' );
+					}
+				},
+				! (bool) $c->get( Settings::class )->get( 'price_list.include_out_of_stock', true )
+			)
+		);
 		$c->set(
 			JobRunner::class,
 			static fn( Container $c ) => new JobRunner(
@@ -445,7 +458,7 @@ final class Plugin {
 		$c->set( ToolsPage::class, static fn( Container $c ) => new ToolsPage( $c->get( Settings::class ), $c->get( ReferencePriceRegistry::class ), SCWC_PLUGIN_DIR . 'templates', $c->get( ZeroPriceProducts::class ) ) );
 		$c->set( StatusProvider::class, static fn( Container $c ) => new StatusProvider( $c->get( Settings::class ), $c->get( Scheduler::class ), $c->get( Clock::class ) ) );
 		$c->set( SettingsPage::class, static fn( Container $c ) => new SettingsPage( $c->get( Settings::class ), $c->get( ReferencePriceRegistry::class ), new Sanitizer(), $c->get( PriceBadge::class ), $c->get( StatusProvider::class ), null, SCWC_PLUGIN_DIR . 'templates' ) );
-		$c->set( ProductFields::class, static fn( Container $c ) => new ProductFields( $c->get( ReferencePriceRegistry::class ), $c->get( Settings::class ) ) );
+		$c->set( ProductFields::class, static fn( Container $c ) => new ProductFields( $c->get( ReferencePriceRegistry::class ) ) );
 		$c->set( VariationFields::class, static fn( Container $c ) => new VariationFields( $c->get( ReferencePriceRegistry::class ) ) );
 		$c->set( ProductSave::class, static fn( Container $c ) => new ProductSave( $c->get( ReferencePriceRegistry::class ) ) );
 		$c->set(
