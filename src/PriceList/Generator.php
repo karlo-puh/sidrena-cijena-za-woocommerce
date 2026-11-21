@@ -170,9 +170,9 @@ class Generator {
 					$write( ItemStream::encode( $item ) );
 				}
 			};
-			$ids = array_keys( $items );
-			$i   = 0;
-			$n   = count( $ids );
+			$ids   = array_keys( $items );
+			$i     = 0;
+			$n     = count( $ids );
 			while ( false !== ( $line = fgets( $src ) ) ) {
 				$id = ItemStream::idOf( $line );
 				while ( $i < $n && $ids[ $i ] < $id ) {

@@ -59,6 +59,19 @@ final class AdminNotices {
 			);
 		}
 
+		if ( $listOn && '' === (string) $this->settings->get( 'price_list.seller_id', '' ) ) {
+			$notices[] = $this->notice(
+				'seller_id',
+				'error',
+				sprintf(
+				/* translators: %s: settings URL */
+					__( 'Sidrena cijena: novi cjenik ne objavljuje se dok ne unesete OIB / matični broj trgovca (dio naziva datoteke, NN 132/2026). <a href="%s">Otvorite postavke cjenika</a>.', 'sidrena-cijena-za-woocommerce' ),
+					esc_url( $setUrl . '&tab=price_list' )
+				),
+				false
+			);
+		}
+
 		if ( $listOn ) {
 			if ( null === $env->nextGeneration ) {
 				$notices[] = $this->notice( 'schedule', 'warning', __( 'Sidrena cijena: dnevno generiranje cjenika nije zakazano. Otvorite postavke cjenika i kliknite „Ponovno zakaži zadatke”.', 'sidrena-cijena-za-woocommerce' ), false );

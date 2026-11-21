@@ -66,12 +66,12 @@ U blokovskoj košarici i blagajni (WooCommerce Blocks) sidrena cijena prikazuje 
 
 1. Prenesite ZIP dodatka (Dodaci → Dodaj novi → Prenesi dodatak) ili mapu u `wp-content/plugins/`. Composer nije potreban.
 2. Aktivirajte dodatak. WooCommerce 9.0+ i PHP 8.1+ su obavezni.
-3. **WooCommerce → Sidrena cijena → Prodajni objekti**: unesite adresu, oznaku prodajnog objekta i broj pohrane webshopa (ulaze u naziv datoteke cjenika) te dodajte fizičke poslovnice ako ih imate – svaka dobiva vlastitu datoteku i adresu.
+3. **WooCommerce → Sidrena cijena → Prodajni objekti**: unesite adresu i oznaku prodajnog objekta webshopa, a u kartici **Cjenik** OIB / matični broj trgovca (ulaze u naziv datoteke cjenika) te dodajte fizičke poslovnice ako ih imate – svaka dobiva vlastitu datoteku i adresu.
 4. **Referentne cijene**: provjerite datum (10. 9. 2026.) i po potrebi dodajte FMCG kategorije s datumom 2. 5. 2025.
 5. **WooCommerce → Sidrena cijena – Alati**: uvezite provjerene povijesne cijene s pripadajućim datumom. Današnje cijene nemojte označiti povijesnim datumom bez dokaza.
-6. **Cjenik**: kliknite „Generiraj sada”, pričekajte dovršetak zakazanih radnji i provjerite `https://vasa-trgovina.hr/cjenik/`.
-7. Preporuka: postavite pravi sistemski cron (`DISABLE_WP_CRON` + `wp cron event run --due-now` ili `wp action-scheduler run`) kako bi generiranje u 06:00 bilo pouzdano. Dodatno: vanjski cron koji zakazuje izvoz pozivom na `https://vasa-trgovina.hr/cjenik/?scwc_run=1&key=VAŠ_KLJUČ` (ključ je u postavkama). HTTP poziv vraća 202; Action Scheduler ili WP-Cron i dalje mora izvršiti zakazane radnje.
-8. Ako koristite cache dodatak ili CDN: URL-ovi `/cjenik/` i `/cjenik/latest.*` ne smiju se keširati (dodatak šalje `no-cache` zaglavlja i `DONOTCACHEPAGE`).
+6. **Cjenik**: kliknite „Generiraj sada”, pričekajte dovršetak zakazanih radnji i provjerite `https://vasa-trgovina.hr/cjenik/` i `/cjenik/latest_roba.csv`.
+7. Preporuka: postavite pravi sistemski cron (`DISABLE_WP_CRON` + `wp cron event run --due-now` ili `wp action-scheduler run`) kako bi dnevna provjera (06:00) i objava do 11:00 bile pouzdane. Dodatno: vanjski cron koji zakazuje izvoz pozivom na `https://vasa-trgovina.hr/cjenik/?scwc_run=1&key=VAŠ_KLJUČ` (ključ je u postavkama). HTTP poziv vraća 202; Action Scheduler ili WP-Cron i dalje mora izvršiti zakazane radnje.
+8. Ako koristite cache dodatak ili CDN: URL-ovi `/cjenik/`, `/cjenik/latest_*.csv` i `/cjenik/index.json` ne smiju se keširati (dodatak šalje `no-cache` zaglavlja i `DONOTCACHEPAGE`).
 
 == Frequently Asked Questions ==
 
@@ -81,7 +81,7 @@ Kad na GitHubu objavimo novu verziju, WordPress → Dodaci prikazuje „Ažurira
 
 = Otvorio sam /cijene i dobio 404 =
 
-Javna adresa cjenika je `https://vasa-trgovina.hr/cjenik/` (te `/cjenik/latest.xml` i `/cjenik/latest.csv`), a ne `/cijene`. Slug mijenjate u WooCommerce → Sidrena cijena → Cjenik. Ako i `/cjenik/` vraća 404: otvorite Postavke → Trajne veze i kliknite „Spremi promjene” (bez izmjena) ili u kartici Cjenik kliknite „Ponovno zakaži zadatke”; s „običnim” trajnim vezama koristite `?scwc_cjenik=latest&scwc_format=xml`. Kartica Cjenik prikazuje rezultat automatske provjere dostupnosti.
+Javna adresa cjenika je `https://vasa-trgovina.hr/cjenik/` (te `/cjenik/latest_roba.csv` i `/cjenik/latest_usluge.csv`), a ne `/cijene`. Slug mijenjate u WooCommerce → Sidrena cijena → Cjenik. Ako i `/cjenik/` vraća 404: otvorite Postavke → Trajne veze i kliknite „Spremi promjene” (bez izmjena) ili u kartici Cjenik kliknite „Ponovno zakaži zadatke”; s „običnim” trajnim vezama koristite `?scwc_cjenik=latest&scwc_format=csv&scwc_kind=roba`. Kartica Cjenik prikazuje rezultat automatske provjere dostupnosti.
 
 = Što je sidrena cijena? =
 
@@ -93,7 +93,7 @@ Za novi proizvod ili varijaciju stvorenu dok je fork aktivan dodatak pri prvoj o
 
 = Moram li čuvati stare cjenike? =
 
-Da, najmanje 30 dana. Dodatak čuva i javno poslužuje verzije prema postavci zadržavanja (min. 30 dana) i ne briše ih pri deaktivaciji.
+Da, zamijenjeni cjenik mora ostati dostupan najmanje 15 dana nakon zamjene (NN 132/2026, čl. 3(6)). Dodatak čuva i javno poslužuje verzije prema postavci zadržavanja (min. 15 dana), važeći cjenik nikad ne briše, a datoteke ne briše ni pri deaktivaciji.
 
 = Kako se računa postotak popusta? =
 
@@ -112,7 +112,7 @@ Postavka je namijenjena temama koje pri odabiru varijante zamijene glavnu cijenu
 == Changelog ==
 
 = 2.0.0 =
-* Cjenik prema Pravilniku o načinu objave cjenika proizvoda (NN 132/2026): samo CSV, zaseban cjenik robe i usluga, novi stupci i nazivi datoteka (OIB/MB, ROBA/USLUGE, broj pohrane, GGGGMMDD_SSMM). Nove postavke: OIB / matični broj trgovca (obavezno) i „Isti cjenik za sva prodajna mjesta”. XML se više ne generira; postojeće datoteke ostaju dostupne dok ne isteknu.
+* Cjenik prema Pravilniku o načinu objave cjenika proizvoda (NN 132/2026): samo CSV, zaseban cjenik robe i usluga, novi stupci i nazivi datoteka (OIB/MB, ROBA/USLUGE, broj pohrane, GGGGMMDD_SSMM). Nove postavke: OIB / matični broj trgovca (obavezno; dok nije upisan, novi cjenik se ne objavljuje i administracija prikazuje grešku) i „Isti cjenik za sva prodajna mjesta”. XML se više ne generira; postojeće datoteke ostaju dostupne dok ne isteknu.
 * Nova datoteka objavljuje se samo kad se cjenik promijeni. Spremanje proizvoda označava samo taj proizvod, pa se pri promjeni ponovno izrađuju samo njegovi redci umjesto cijelog kataloga; cijeli katalog čita se jednom dnevno i nakon skupnih promjena. Rok objave promjena je 11:00.
 * Zamijenjene datoteke brišu se 15 dana (postavka) nakon zamjene; trenutačni cjenik se nikad ne briše.
 * Nove adrese `/cjenik/latest_roba.csv` i `/cjenik/latest_usluge.csv`; `/cjenik/latest.csv` i `/cjenik/latest.xml` vode na cjenik robe.

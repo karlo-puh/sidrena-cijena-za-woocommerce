@@ -26,19 +26,27 @@ final class AdminNoticesTest extends TestCase {
 	}
 
 	private function notices( ?Settings $settings = null, array $env = [] ): AdminNotices {
-		return new AdminNotices( $settings ?? new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ] ] ) ), fn() => $this->env( $env ), new FixedClock( '2026-10-01 10:00:00' ) );
+		return new AdminNotices( $settings ?? new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ], 'price_list' => [ 'enabled' => '1', 'seller_id' => '12345678903' ] ] ) ), fn() => $this->env( $env ), new FixedClock( '2026-10-01 10:00:00' ) );
 	}
 
 	public function test_healthy_setup_has_no_notices(): void {
 		self::assertSame( [], $this->notices()->collect() );
 	}
 
-	public function test_incomplete_outlet_is_a_non_dismissible_error_everywhere(): void {
+	public function test_incomplete_outlet_or_missing_oib_is_a_non_dismissible_error_everywhere(): void {
 		$n = ( new AdminNotices( new Settings( Defaults::all() ), fn() => $this->env( [ 'screenId' => 'dashboard' ] ), new FixedClock() ) )->collect();
-		self::assertCount( 1, $n );
-		self::assertSame( 'outlet', $n[0]['id'] );
-		self::assertSame( 'error', $n[0]['type'] );
-		self::assertFalse( $n[0]['dismissible'] );
+		self::assertSame( [ 'outlet', 'seller_id' ], array_column( $n, 'id' ) );
+		self::assertSame( [ 'error', 'error' ], array_column( $n, 'type' ) );
+		self::assertSame( [ false, false ], array_column( $n, 'dismissible' ) );
+	}
+
+	public function test_missing_oib_is_an_error_when_the_outlet_is_complete(): void {
+		$settings = new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ] ] ) );
+		$n        = $this->notices( $settings, [ 'screenId' => 'dashboard' ] )->collect();
+		self::assertSame( [ 'seller_id' ], array_column( $n, 'id' ) );
+		self::assertStringContainsString( 'tab=price_list', $n[0]['message'] );
+		$off = new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ], 'price_list' => [ 'seller_id' => '' ] ] ) );
+		self::assertSame( [], $this->notices( $off )->collect(), 'no notice while the price list is disabled' );
 	}
 
 	public function test_missing_schedule_and_stale_generation_are_warnings(): void {
@@ -90,10 +98,10 @@ final class AdminNoticesTest extends TestCase {
 	}
 
 	public function test_generation_scheduled_after_the_deadline_is_a_warning(): void {
-		$late = ( new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ], 'price_list' => [ 'enabled' => '1', 'generate_time' => '10:45' ] ] ) ) );
+		$late = ( new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ], 'price_list' => [ 'seller_id' => '12345678903', 'enabled' => '1', 'generate_time' => '10:45' ] ] ) ) );
 		$ids  = array_column( ( new AdminNotices( $late, fn() => $this->env(), new FixedClock( '2026-10-01 10:00:00' ) ) )->collect(), 'id' );
 		self::assertSame( [ 'generate_after_deadline' ], $ids );
-		$ok   = ( new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ], 'price_list' => [ 'enabled' => '1', 'generate_time' => '10:30' ] ] ) ) );
+		$ok   = ( new Settings( ( new \SidrenaCijena\Settings\Sanitizer() )->sanitize( [ 'outlet' => [ 'address' => 'Ilica 1', 'label' => 'WEB1' ], 'price_list' => [ 'seller_id' => '12345678903', 'enabled' => '1', 'generate_time' => '10:30' ] ] ) ) );
 		self::assertSame( [], ( new AdminNotices( $ok, fn() => $this->env(), new FixedClock( '2026-10-01 10:00:00' ) ) )->collect() );
 	}
 

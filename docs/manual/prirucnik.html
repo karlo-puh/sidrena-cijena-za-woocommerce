@@ -68,8 +68,8 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
   <h1>Sidrena cijena za WooCommerce</h1>
   <div class="subtitle">Priručnik za vlasnike trgovine</div>
   <div class="meta">
-    <div><strong>Verzija dodatka:</strong> 1.3.0</div>
-    <div><strong>Datum priručnika:</strong> 23. 10. 2026.</div>
+    <div><strong>Verzija dodatka:</strong> 2.0.0</div>
+    <div><strong>Datum priručnika:</strong> 21. 11. 2026.</div>
     <div><strong>Namjena:</strong> vlasnici i administratori hrvatskih webshopova na WordPressu i WooCommerceu</div>
   </div>
   <div class="note">Ovaj priručnik opisuje kako dodatak radi i kako ga postaviti. Ne predstavlja pravni savjet. Za tumačenje propisa obratite se pravnom savjetniku ili nadležnom tijelu.</div>
@@ -93,7 +93,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
     <li class="sub"><a href="#ch4-3">4.3 Izvoz referentnih cijena</a></li>
     <li><a href="#ch5">5. Uređivanje pojedinačnog proizvoda i varijacija</a></li>
     <li><a href="#ch6">6. Javni cjenik</a></li>
-    <li><a href="#ch7">7. Automatika: generiranje, zakazivanje, cron, cache</a></li>
+    <li><a href="#ch7">7. Automatika: objava, zakazivanje, cron, cache</a></li>
     <li><a href="#ch8">8. Prikaz na stranici</a></li>
     <li><a href="#ch9">9. Kontrolna lista usklađenosti za 17. 11. 2026.</a></li>
     <li><a href="#ch10">10. Rješavanje problema</a></li>
@@ -111,10 +111,10 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <ol>
   <li><strong>Sidrenu (dodatnu) cijenu uz svaku cijenu.</strong> Uz aktualnu cijenu svakog proizvoda prikazuje se redovna cijena koja je vrijedila na referentni dan (zadano 10. 9. 2026.), s datumom. Prikaz radi na popisu proizvoda, stranici proizvoda, varijacijama, u košarici, mini-košarici i na blagajni.</li>
   <li><strong>Najnižu cijenu u 30 dana prije sniženja.</strong> Dodatak bilježi povijest cijena i za vrijeme svakog sniženja prikazuje najnižu cijenu u 30 dana prije početka sniženja te postotak popusta izračunat iz nje (tzv. Omnibus pravilo).</li>
-  <li><strong>Strojno čitljiv cjenik (XML i CSV).</strong> Cjenik se automatski generira svaki dan (zadano u 06:00), a dodatno osvježavanje pri promjeni cijena ovisi o postavci, objavljuje se na javnoj adresi <span class="url">https://vasa-trgovina.hr/cjenik/</span>, ima propisani naziv datoteke i propisana polja, a sve objavljene verzije čuvaju se najmanje 30 dana.</li>
+  <li><strong>Strojno čitljiv cjenik (CSV).</strong> Za svaki prodajni objekt objavljuju se zaseban cjenik robe i zaseban cjenik usluga, s propisanim nazivom datoteke i propisanim stupcima, na javnoj adresi <span class="url">https://vasa-trgovina.hr/cjenik/</span>. Nova datoteka objavljuje se samo kad se cjenik promijeni: nekoliko minuta nakon spremanja proizvoda i pri dnevnoj provjeri (zadano u 06:00), uz zakonski rok 11:00 na dan promjene. Zamijenjene datoteke ostaju dostupne najmanje 15 dana.</li>
 </ol>
 
-<div class="box-note"><strong>Održavani fork, verzija 1.3.0</strong> Novi artikli i varijacije bilježe prvu redovnu cijenu i datum pri objavi. Postojeći povijesni podaci ostaju sačuvani. Veliki cjenici obrađuju se u manjim zakazanim radnjama; gumb za generiranje potvrđuje zakazivanje, a objavu provjerite u stanju cjenika. Za robu odaberite „Nikad (samo dnevno)” i zatim „Ponovno zakaži zadatke”. Snimke zaslona prikazuju raniji izgled sučelja; tekst opisuje aktualno ponašanje.</div>
+<div class="box-note"><strong>Verzija 2.0</strong> Cjenik slijedi Pravilnik o načinu objave cjenika proizvoda (NN 132/2026): samo CSV, zaseban cjenik robe i usluga, naziv datoteke s OIB-om i objava samo kad se cjenik promijeni. Nakon nadogradnje u kartici Cjenik upišite <strong>OIB / matični broj trgovca</strong> – dok ga nema, novi cjenik se ne objavljuje, a javne adrese i dalje poslužuju zadnji stari cjenik. XML se više ne izrađuje; stare XML i CSV datoteke ostaju dostupne još najmanje 15 dana nakon prve nove objave. Novi artikli i varijacije i dalje bilježe prvu redovnu cijenu i datum pri objavi. Snimke zaslona prikazuju raniji izgled sučelja; tekst opisuje aktualno ponašanje.</div>
 
 <h2>1.2 Što zakon traži (jednostavnim jezikom)</h2>
 
@@ -122,23 +122,25 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <p>Vlada Republike Hrvatske objavila je 11. 9. 2026. u Narodnim novinama br. 101/2026 Odluku o isticanju dodatne cijene. Od <strong>17. 11. 2026.</strong> svaki trgovac i pružatelj usluga mora uz svaku cijenu – i na web stranicama – istaknuti <strong>„dodatnu (sidrenu) cijenu”</strong>. To je <em>redovna</em> cijena koja je za taj proizvod ili uslugu vrijedila na dan <strong>10. 9. 2026.</strong>, bez posebnih oblika prodaje (bez akcija, sniženja, rasprodaja).</p>
 <p>Iznimka: trgovci koji su sidrenu cijenu već isticali za kategorije <em>hrana, piće, kozmetika, sredstva za čišćenje, toaletne potrepštine i proizvodi za kućanstvo</em> za te kategorije zadržavaju stari referentni dan <strong>2. 5. 2025.</strong></p>
 
-<h3>Odluka o objavi cjenika (NN 101/2026, akt 1213)</h3>
-<p>Ista Narodne novine sadrže i Odluku o objavi cjenika. Ona traži da trgovac na svojoj web stranici objavi <strong>strojno čitljiv cjenik</strong> u XML ili CSV obliku:</p>
+<h3>Pravilnik o načinu objave cjenika proizvoda (NN 132/2026, akt 1584)</h3>
+<p>Pravilnik određuje kako trgovac na svojoj web stranici objavljuje <strong>strojno čitljiv cjenik</strong>:</p>
 <ul>
-  <li>cjenik <strong>robe</strong> ažurira se <strong>jednom dnevno do 08:00 za tekući radni dan</strong>; promjene cijena tijekom dana ne zahtijevaju novu datoteku;</li>
-  <li>cjenik <strong>usluga</strong> objavljuje se <strong>pri svakoj promjeni cijene</strong>, najkasnije do 08:00 toga dana;</li>
-  <li>svaka objavljena verzija mora ostati javno dostupna <strong>najmanje 30 dana</strong>;</li>
-  <li>za proizvode cjenik sadrži: naziv, šifru, marku, jedinicu mjere, cijenu za jedinicu mjere, maloprodajnu cijenu i oznaku posebnog oblika prodaje s nazivom, sidrenu cijenu, barkod i dostupnost (dostupno/nedostupno);</li>
-  <li>za usluge: naziv usluge, maloprodajnu cijenu s oznakom posebnog oblika prodaje i sidrenu cijenu;</li>
-  <li>naziv datoteke sadrži: oblik prodajnog objekta, adresu, oznaku, broj pohrane te datum i vrijeme;</li>
-  <li>svaki prodajni objekt (webshop, svaka poslovnica) ima <strong>vlastitu datoteku</strong> jedinstvene strukture – i kad su cijene jednake;</li>
-  <li>cjenik mora biti dostupan tako da ga <strong>automatizirani alati</strong> (npr. usporednici cijena) mogu dohvatiti bez prijave i bez zaštite od robota.</li>
+  <li>cjenik je u <strong>CSV</strong> obliku (kodiranje UTF-8, razdjelnik „;”), <strong>zasebno za robu i za usluge</strong>;</li>
+  <li><strong>izmijenjeni cjenik</strong> objavljuje se najkasnije <strong>do 11:00 na dan izmjene</strong>; dok se cijene i ponuda ne mijenjaju, nova datoteka nije potrebna;</li>
+  <li>zamijenjeni cjenik ostaje javno dostupan još <strong>najmanje 15 dana</strong> od zamjene;</li>
+  <li>stupci cjenika robe: naziv, šifra, marka, neto količina, jedinica mjere, maloprodajna cijena, posebni oblik prodaje (da/ne), cijena za jedinicu mjere, barkod, EAN barkod i bazna cijena; stupci cjenika usluga: naziv, maloprodajna cijena, posebni oblik prodaje i bazna cijena;</li>
+  <li>naziv datoteke sadrži OIB (pravna osoba) ili matični broj (fizička osoba), prodajni objekt (oblik, adresu i oznaku) ili oznaku <code>ZA_SVA_PRODAJNA_MJESTA</code>, vrstu (<code>ROBA</code> ili <code>USLUGE</code>), broj pohrane te datum i vrijeme objave (<code>GGGGMMDD_SSMM</code>);</li>
+  <li>svaki prodajni objekt (webshop, svaka poslovnica) ima <strong>vlastiti cjenik</strong>, osim ako trgovac objavljuje jedan cjenik za sva prodajna mjesta.</li>
 </ul>
+<p>Dodatak cjenik objavljuje bez prijave i bez zaštite od robota, kako bi ga i automatizirani alati (npr. usporednici cijena) mogli dohvatiti. Broj pohrane vodi kao redni broj objave: prva datoteka robe nekog prodajnog objekta ima broj 1, svaka sljedeća broj veći za jedan (zasebno za robu i za usluge). Tekst pravilnika: <a href="https://narodne-novine.nn.hr/clanci/sluzbeni/2026_11_132_1584.html">NN 132/2026, 1584</a>.</p>
 
-<p>Izmjene <a href="https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_110_1309.html">NN 110/2026, 1309</a> i <a href="https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_110_1310.html">1310</a> odgodile su primjenu obiju Odluka na 17. 11. 2026., bez promjene referentnog datuma. <a href="https://mingo.gov.hr/UserDocsImages/slike/MINGO_Poja%C5%A1njenja_dodatna%20cijena_objava%20cjenika.pdf">Pojašnjenje Ministarstva, točka 2.3</a>, razlikuje dnevni cjenik robe od cjenika usluga i navodi da promjene cijena unutar dana ne zahtijevaju naknadnu dnevnu izmjenu datoteke. Datum primjene u tom pojašnjenju prethodi odgodi.</p>
+<h3>Pravilnik o isticanju bazne cijene (NN 132/2026, akt 1583)</h3>
+<p>Bazna cijena je <strong>redovna cijena</strong> proizvoda na dan <strong>10. 9. 2026.</strong>, bez akcija i sniženja. Za proizvod koji toga dana nije bio u ponudi bazna cijena je cijena na dan njegove <strong>prve ponude</strong>. To je cijena koju dodatak vodi kao sidrenu cijenu (poglavlje 3.2); u cjeniku se upisuje u stupac <code>bazna_cijena</code>. Za nove proizvode dodatak prvu redovnu cijenu bilježi sam pri objavi. Tekst pravilnika: <a href="https://narodne-novine.nn.hr/clanci/sluzbeni/2026_11_132_1583.html">NN 132/2026, 1583</a>.</p>
+
+<p>Izmjene <a href="https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_110_1309.html">NN 110/2026, 1309</a> i <a href="https://narodne-novine.nn.hr/clanci/sluzbeni/2026_09_110_1310.html">1310</a> odgodile su primjenu Odluka iz NN 101/2026 na 17. 11. 2026., bez promjene referentnog datuma.</p>
 
 <h3>Zakon o zaštiti potrošača, čl. 19 („Omnibus”)</h3>
-<p>Za vrijeme svakog sniženja trgovac mora istaknuti <strong>najnižu cijenu koju je primjenjivao u 30 dana prije sniženja</strong>, a postotak popusta računa se iz te cijene (ne iz redovne). Od <strong>17. 11. 2026.</strong> uvodi se i trajna „bazna cijena”; pravilnik koji određuje njezin referentni dan još nije objavljen. Dodatak za to već ima pripremljenu drugu vrstu referentne cijene (v. poglavlje 3.2).</p>
+<p>Za vrijeme svakog sniženja trgovac mora istaknuti <strong>najnižu cijenu koju je primjenjivao u 30 dana prije sniženja</strong>, a postotak popusta računa se iz te cijene (ne iz redovne).</p>
 
 <h3>Kazne</h3>
 <p>Prema čl. 20 Zakona o iznimnim mjerama kontrole cijena, za nepoštivanje ovih obveza predviđene su novčane kazne: za trgovačka društva <strong>3.000 – 30.000 €</strong>, za obrte <strong>1.000 – 20.000 €</strong>, a za trgovce fizičke osobe <strong>1.000 – 6.000 €</strong>. Inspekcija može i privremeno zabraniti prodaju.</p>
@@ -147,8 +149,8 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <table>
   <tr><th>Datum</th><th>Što se događa</th><th>Što trebate napraviti</th></tr>
   <tr><td>10. 9. 2026.</td><td>Referentni dan za sidrenu cijenu</td><td>Sačuvajte dokaz redovnih cijena toga dana (izvoz, snimka zaslona, cjenik).</td></tr>
-  <tr><td>17. 11. 2026.</td><td>Stupa na snagu obveza isticanja sidrene cijene i objave cjenika</td><td>Dodatak instaliran, sidrene cijene snimljene, cjenik dostupan na <span class="url">/cjenik/</span>.</td></tr>
-  <tr><td>17. 11. 2026.</td><td>Počinje obveza „bazne cijene” (pravilnik u pripremi)</td><td>Kad pravilnik odredi datum: uključite „Bazna cijena” u postavkama i snimite cijene.</td></tr>
+  <tr><td>17. 11. 2026.</td><td>Počinje primjena obveze isticanja sidrene (bazne) cijene i objave cjenika (NN 101/2026, NN 132/2026)</td><td>Dodatak instaliran, sidrene cijene snimljene, OIB upisan, cjenik dostupan na <span class="url">/cjenik/</span>.</td></tr>
+  <tr><td>Svaki dan s promjenom cijena</td><td>Izmijenjeni cjenik mora biti objavljen do 11:00</td><td>Ostavite „Objava pri promjeni proizvoda” na „Pri promjeni (preporučeno)” i osigurajte cron (poglavlje 7).</td></tr>
 </table>
 
 <h2>1.4 Što dodatak ne radi umjesto vas</h2>
@@ -177,7 +179,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 
 <h2>2.2 Instalacija i aktivacija</h2>
 <ol>
-  <li>Prenesite ZIP paket dodatka kroz <em>Dodaci → Dodaj novi → Prenesi dodatak</em> ili raspakirajte mapu u <code>wp-content/plugins/</code>. Paket već sadrži mapu <code>vendor/</code>; ako ona nedostaje, administracija prikazuje poruku „nedostaje vendor/autoload.php”.</li>
+  <li>Prenesite ZIP paket dodatka kroz <em>Dodaci → Dodaj novi → Prenesi dodatak</em> ili raspakirajte mapu u <code>wp-content/plugins/</code>. Composer nije potreban.</li>
   <li>Aktivirajte dodatak. WooCommerce mora biti aktivan.</li>
 </ol>
 
@@ -185,21 +187,21 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <ul>
   <li>Stvara se tablica <strong>povijesti cijena</strong> u bazi (<code>{prefiks}scwc_price_history</code>).</li>
   <li>Postavke se popunjavaju zadanim vrijednostima, a <strong>ključ za vanjski cron</strong> automatski se generira.</li>
-  <li><strong>Zakazuju se zadaci:</strong> dnevno generiranje cjenika (06:00), dnevna provjera cijena (00:30) i čišćenje stare povijesti (svakih 7 dana). Ako je instaliran Action Scheduler (dolazi uz WooCommerce), koristi se on; inače WP-Cron.</li>
+  <li><strong>Zakazuju se zadaci:</strong> dnevna provjera cjenika (06:00), dnevna provjera cijena (00:30) i čišćenje stare povijesti (svakih 7 dana). Ako je instaliran Action Scheduler (dolazi uz WooCommerce), koristi se on; inače WP-Cron.</li>
   <li>U pozadini se pokreće <strong>prvo snimanje povijesti cijena</strong> svih proizvoda, kako bi se od tog trenutka mogla računati najniža cijena u 30 dana.</li>
   <li>Registriraju se javne adrese <span class="url">/cjenik/…</span> (pravila trajnih veza osvježavaju se pri prvom sljedećem učitavanju stranice).</li>
 </ul>
 
-<div class="box-note"><strong>Deaktivacija i deinstalacija</strong> Pri deaktivaciji zadaci se otkazuju, ali podaci i generirani cjenici ostaju (obveza čuvanja 30 dana). Pri brisanju dodatka podaci se brišu samo ako ste u kartici <em>Napredno</em> uključili „Obriši sve podatke pri deinstalaciji”.</div>
+<div class="box-note"><strong>Deaktivacija i deinstalacija</strong> Pri deaktivaciji zadaci se otkazuju, ali podaci i objavljeni cjenici ostaju (zamijenjeni cjenik mora ostati dostupan 15 dana). Pri brisanju dodatka podaci se brišu samo ako ste u kartici <em>Napredno</em> uključili „Obriši sve podatke pri deinstalaciji”.</div>
 
 <h2>2.3 Brzi start u 6 koraka</h2>
 <ol>
-  <li><strong>WooCommerce → Sidrena cijena → Prodajni objekti:</strong> upišite adresu sjedišta, oznaku prodajnog objekta i broj skladišta/pohrane. Ako imate fizičke poslovnice, dodajte ih – svaka dobiva vlastitu datoteku cjenika.</li>
+  <li><strong>WooCommerce → Sidrena cijena → Prodajni objekti:</strong> upišite adresu sjedišta i oznaku prodajnog objekta. Ako imate fizičke poslovnice, dodajte ih – svaka dobiva vlastiti cjenik.</li>
   <li><strong>Kartica Referentne cijene:</strong> provjerite da je referentni datum 10. 9. 2026. Ako ste za FMCG kategorije sidrenu cijenu isticali već od 2. 5. 2025., dodajte te kategorije kao iznimku s tim datumom.</li>
   <li><strong>WooCommerce → Sidrena cijena – Alati:</strong> pokrenite „Snimi trenutne redovne cijene kao referentnu cijenu” (ako su vaše današnje redovne cijene iste kao 10. 9. 2026.) ili uvezite CSV s cijenama koje su vrijedile toga dana.</li>
-  <li><strong>Kartica Cjenik:</strong> kliknite „Generiraj sada”, pričekajte dovršetak zakazanih radnji i otvorite <span class="url">https://vasa-trgovina.hr/cjenik/</span> u pregledniku. Trebate vidjeti popis datoteka.</li>
+  <li><strong>Kartica Cjenik:</strong> upišite <strong>OIB / matični broj trgovca</strong> i spremite. Kliknite „Generiraj sada”, pričekajte dovršetak zakazanih radnji i otvorite <span class="url">https://vasa-trgovina.hr/cjenik/latest_roba.csv</span>. Na <span class="url">https://vasa-trgovina.hr/cjenik/</span> trebate vidjeti popis datoteka.</li>
   <li><strong>Provjerite prikaz</strong> na stranici proizvoda: uz cijenu treba stajati npr. „Cijena na dan 10. 9. 2026.: 14,99 €”.</li>
-  <li><strong>Osigurajte pouzdano izvršavanje u 06:00:</strong> postavite pravi sistemski cron (poglavlje 7) i isključite keširanje adrese <span class="url">/cjenik/</span> u cache dodatku ili CDN-u.</li>
+  <li><strong>Osigurajte pouzdano izvršavanje zadataka:</strong> postavite pravi sistemski cron (poglavlje 7), da se promjene objave za nekoliko minuta, a dnevna provjera izvrši u 06:00, te isključite keširanje adrese <span class="url">/cjenik/</span> u cache dodatku ili CDN-u.</li>
 </ol>
 </div>
 
@@ -210,36 +212,34 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 
 <h2 id="ch3-1">3.1 Kartica „Prodajni objekti”</h2>
 <figure class="shot"><img src="img/postavke-prodajni-objekti.png" alt="Kartica „Prodajni objekti”: podaci webshopa, popis poslovnica i pregled naziva datoteka i javnih adresa (na snimci je putanja cjenika promijenjena u „cijene”)."><figcaption>Kartica „Prodajni objekti”: podaci webshopa, popis poslovnica i pregled naziva datoteka i javnih adresa (na snimci je putanja cjenika promijenjena u „cijene”).</figcaption></figure>
-<p class="small">Uvodni tekst kartice: „Podaci o prodajnom objektu ulaze u naziv datoteke i zaglavlje cjenika (NN 101/2026).”</p>
+<p class="small">Uvodni tekst kartice: „Podaci o prodajnom objektu ulaze u naziv datoteke cjenika (NN 132/2026).” OIB / matični broj trgovca i „Isti cjenik za sva prodajna mjesta” nalaze se u kartici Cjenik (3.4).</p>
 <table>
   <tr><th style="width:24%">Polje</th><th>Što znači</th><th style="width:16%">Zadano</th><th style="width:24%">Preporuka</th></tr>
-  <tr><td>Oblik prodajnog objekta</td><td>Vrsta objekta: npr. webshop, prodavaonica, kiosk. Prvi dio naziva datoteke cjenika.</td><td><code>webshop</code></td><td>Za web trgovinu ostavite „webshop”.</td></tr>
-  <tr><td>Adresa prodajnog objekta</td><td>Za web trgovinu: adresa sjedišta trgovca. Obvezan podatak u cjeniku i drugi dio naziva datoteke.</td><td>prazno</td><td>Upišite punu adresu, npr. „Ilica 1, 10000 Zagreb”. Bez adrese cjenik se ne može generirati.</td></tr>
+  <tr><td>Oblik prodajnog objekta</td><td>Vrsta objekta: npr. webshop, prodavaonica, kiosk. Dio naziva datoteke cjenika (iza OIB-a).</td><td><code>webshop</code></td><td>Za web trgovinu ostavite „webshop”.</td></tr>
+  <tr><td>Adresa prodajnog objekta</td><td>Za web trgovinu: adresa sjedišta trgovca. Obvezan podatak i dio naziva datoteke.</td><td>prazno</td><td>Upišite punu adresu, npr. „Ilica 1, 10000 Zagreb”. Bez adrese cjenik se ne može generirati.</td></tr>
   <tr><td>Oznaka prodajnog objekta</td><td>Interna oznaka objekta (npr. naziv web trgovine). Obvezan dio naziva datoteke. Iz oznake se izvodi i trajni ključ objekta koji se koristi u adresama (<span class="url">/cjenik/{ključ}/</span>).</td><td>prazno</td><td>Kratka oznaka bez posebnih znakova, npr. „Web1”. Kasnije preimenovanje ne gubi arhivu (ključ ostaje).</td></tr>
-  <tr><td>Broj pohrane</td><td>„Broj pohrane” iz Odluke; četvrti dio naziva datoteke.</td><td><code>1</code></td><td>Ostavite 1 ako nemate više skladišta.</td></tr>
-  <tr><td>Naziv trgovca</td><td>Naziv koji se upisuje u zaglavlje cjenika i na javnu stranicu popisa.</td><td>prazno = naziv web stranice</td><td>Upišite službeni naziv tvrtke/obrta.</td></tr>
+  <tr><td>Naziv trgovca</td><td>Naziv na javnoj stranici popisa i u index.json.</td><td>prazno = naziv web stranice</td><td>Upišite službeni naziv tvrtke/obrta.</td></tr>
 </table>
 
 <h3>Dodatni prodajni objekti (poslovnice)</h3>
-<p>Ispod osnovnih polja nalazi se odjeljak <strong>„Dodatni prodajni objekti (poslovnice)”</strong> s opisom: „Svaki prodajni objekt mora imati vlastitu datoteku cjenika s vlastitim nazivom i arhivom od 30 dana (NN 101/2026, t. VI.), i kad su cijene jednake. Ovdje dodajte fizičke poslovnice; cijene se preuzimaju iz WooCommercea.”</p>
+<p>Ispod osnovnih polja nalazi se odjeljak <strong>„Dodatni prodajni objekti (poslovnice)”</strong> s opisom: „Svaki prodajni objekt ima vlastiti cjenik s vlastitim nazivom (NN 132/2026), osim ako je uključen isti cjenik za sva prodajna mjesta. Ovdje dodajte fizičke poslovnice; cijene se preuzimaju iz WooCommercea.”</p>
 <p>Gumb <strong>„Dodaj prodajni objekt”</strong> dodaje redak s poljima:</p>
 <table>
   <tr><th>Polje u retku</th><th>Zadano</th><th>Napomena</th></tr>
   <tr><td>Oblik (npr. poslovnica, prodavaonica, kiosk)</td><td><code>poslovnica</code></td><td></td></tr>
   <tr><td>Adresa</td><td>prazno</td><td>Obvezno – redak bez adrese se pri spremanju odbacuje.</td></tr>
   <tr><td>Oznaka prodajnog objekta</td><td>prazno</td><td>Obvezno – redak bez oznake se pri spremanju odbacuje.</td></tr>
-  <tr><td>Broj pohrane</td><td><code>1</code></td><td></td></tr>
-</table>
-<p>Svaki redak ima poveznicu <strong>„Ukloni”</strong>. Svaka poslovnica dobiva vlastitu datoteku, arhivu i adrese <span class="url">/cjenik/{ključ}/latest.xml</span> i <span class="url">/cjenik/{ključ}/latest.csv</span>. Cijene u datotekama poslovnica jednake su cijenama webshopa.</p>
+  </table>
+<p>Svaki redak ima poveznicu <strong>„Ukloni”</strong>. Svaka poslovnica dobiva vlastiti cjenik robe i usluga, vlastitu arhivu i adrese <span class="url">/cjenik/{ključ}/latest_roba.csv</span> i <span class="url">/cjenik/{ključ}/latest_usluge.csv</span>. Cijene u cjenicima poslovnica jednake su cijenama webshopa.</p>
 
 <h3>Tablica „Datoteke cjenika po prodajnom objektu” (pregled naziva datoteke)</h3>
-<p>Na dnu kartice prikazuje se tablica s opisom „Svaki prodajni objekt dobiva vlastitu datoteku (XML i/ili CSV) s propisanim nazivom i vlastitom arhivom od najmanje 30 dana. Datum i vrijeme dodaju se pri svakom generiranju.” Stupci:</p>
+<p>Na dnu kartice prikazuje se tablica s opisom „Svaki prodajni objekt dobiva vlastiti cjenik robe i usluga (CSV) s propisanim nazivom, osim ako je uključen isti cjenik za sva prodajna mjesta. Broj i vrijeme objave dodaju se pri svakoj objavi.” Stupci:</p>
 <table>
   <tr><th>Prodajni objekt</th><th>Naziv datoteke</th><th>Javne adrese</th></tr>
-  <tr><td>Web1<br><span class="small">webshop · Ilica 1, 10000 Zagreb</span></td><td><code>webshop_ilica-1-10000-zagreb_web1_1_YYYYMMDD_HHMMSS.xml</code></td><td><span class="url">https://vasa-trgovina.hr/cjenik/</span><br><span class="url">…/cjenik/latest.xml</span><br><span class="url">…/cjenik/latest.csv</span><br><span class="url">…/cjenik/web1/</span><br><span class="url">…/cjenik/web1/latest.xml</span><br><span class="url">…/cjenik/web1/latest.csv</span></td></tr>
-  <tr><td>Poslovnica Split<br><span class="small">poslovnica · Riva 5, 21000 Split</span></td><td><code>poslovnica_riva-5-21000-split_poslovnica-split_1_YYYYMMDD_HHMMSS.xml</code></td><td><span class="url">…/cjenik/poslovnica-split/</span><br><span class="url">…/cjenik/poslovnica-split/latest.xml</span><br><span class="url">…/cjenik/poslovnica-split/latest.csv</span></td></tr>
+  <tr><td>Web1<br><span class="small">webshop · Ilica 1, 10000 Zagreb</span></td><td><code>12345678901_webshop_ilica-1-10000-zagreb_web1_ROBA_{broj}_GGGGMMDD_SSMM.csv</code></td><td><span class="url">https://vasa-trgovina.hr/cjenik/</span><br><span class="url">…/cjenik/latest_roba.csv</span><br><span class="url">…/cjenik/latest_usluge.csv</span><br><span class="url">…/cjenik/web1/</span><br><span class="url">…/cjenik/web1/latest_roba.csv</span><br><span class="url">…/cjenik/web1/latest_usluge.csv</span></td></tr>
+  <tr><td>Poslovnica Split<br><span class="small">poslovnica · Riva 5, 21000 Split</span></td><td><code>12345678901_poslovnica_riva-5-21000-split_poslovnica-split_ROBA_{broj}_GGGGMMDD_SSMM.csv</code></td><td><span class="url">…/cjenik/poslovnica-split/</span><br><span class="url">…/cjenik/poslovnica-split/latest_roba.csv</span><br><span class="url">…/cjenik/poslovnica-split/latest_usluge.csv</span></td></tr>
 </table>
-<p>Pregled se osvježava nakon spremanja. Dijelovi naziva pretvaraju se u mala slova bez dijakritike; razmaci, zarezi i ostali znakovi postaju crtica. Prazan dio zamjenjuje se s <code>na</code>.</p>
+<p>Pregled prikazuje naziv datoteke robe; datoteka usluga umjesto <code>ROBA</code> ima <code>USLUGE</code>. Dok OIB nije upisan, na njegovu mjestu piše „OIB”. Kad je uključeno „Isti cjenik za sva prodajna mjesta”, umjesto oblika, adrese i oznake stoji <code>ZA_SVA_PRODAJNA_MJESTA</code>. Pregled se osvježava nakon spremanja. Dijelovi naziva pretvaraju se u mala slova bez dijakritike; razmaci, zarezi i ostali znakovi postaju crtica. Prazan dio zamjenjuje se s <code>na</code>.</p>
 
 <h2 id="ch3-2">3.2 Kartica „Referentne cijene”</h2>
 <figure class="shot"><img src="img/postavke-referentne-cijene.png" alt="Kartica „Referentne cijene”: sidrena cijena (10. 9. 2026.), iznimke po kategorijama, automatski snapshot i pripremljena bazna cijena."><figcaption>Kartica „Referentne cijene”: sidrena cijena (10. 9. 2026.), iznimke po kategorijama, automatski snapshot i pripremljena bazna cijena.</figcaption></figure>
@@ -250,7 +250,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <table>
   <tr><th style="width:24%">Polje</th><th>Što znači</th><th style="width:16%">Zadano</th><th style="width:24%">Preporuka</th></tr>
   <tr><td>Naziv na stranici</td><td>Tekst koji kupac vidi uz datum i iznos, npr. „Cijena na dan”.</td><td><code>Cijena na dan</code></td><td>Zadani naziv je jasan; može i „Sidrena cijena”.</td></tr>
-  <tr><td>Referentni datum</td><td>Dan na koji se odnosi sidrena cijena. Opis polja: „Zadano 10. 9. 2026. (NN 101/2026). Datum za FMCG kategorije koje ste već označavali: 2. 5. 2025. – dodajte ih kao iznimku ispod.”</td><td><code>2026-09-10</code></td><td>Ne mijenjajte.</td></tr>
+  <tr><td>Referentni datum</td><td>Dan na koji se odnosi sidrena cijena. Opis polja: „Zadano 10. 9. 2026. (redovna cijena na taj dan, NN 132/2026). Datum za FMCG kategorije koje ste već označavali: 2. 5. 2025. – dodajte ih kao iznimku ispod.” Sidrena cijena je i bazna cijena iz Pravilnika o isticanju bazne cijene; u cjeniku je stupac <code>bazna_cijena</code>.</td><td><code>2026-09-10</code></td><td>Ne mijenjajte.</td></tr>
   <tr><td>Iznimke po kategorijama</td><td>Kategorije (uključujući podkategorije) s drugim referentnim datumom. Svaki redak ima višestruki odabir kategorija, polje datuma i poveznicu „Ukloni”. Gumbi: <strong>„Dodaj kategoriju/e”</strong> (prazan redak) i <strong>„Dodaj FMCG kategorije (2. 5. 2025.)”</strong> (redak s već upisanim datumom 2. 5. 2025. – kategorije birate sami).</td><td>bez iznimaka</td><td>Koristite samo ako ste za hranu, piće, kozmetiku, sredstva za čišćenje, toaletne potrepštine i proizvode za kućanstvo sidrenu cijenu već isticali od 2. 5. 2025. Redak bez odabrane kategorije ili bez datuma se pri spremanju odbacuje.</td></tr>
   <tr><td>Automatski snapshot cijena</td><td>Datum i vrijeme u koje će se redovne cijene svih proizvoda automatski kopirati kao referentne (zakazani zadatak). Prazno = bez automatskog snapshota. Snapshot radi u načinu „samo nedostajuće”.</td><td>prazno</td><td>Korisno ako želite snimiti cijene unaprijed određenog dana (npr. u noći nakon referentnog dana).</td></tr>
   <tr><td>Snapshot obavljen</td><td>Samo za čitanje: prikazuje vrijeme zakazanog snapshota koji je izvršen (ili „—”).</td><td>—</td><td></td></tr>
@@ -259,7 +259,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <h3>Odjeljak „Bazna cijena (od 17. 11. 2026.)”</h3>
 <table>
   <tr><th style="width:24%">Polje</th><th>Što znači</th><th style="width:16%">Zadano</th><th style="width:24%">Preporuka</th></tr>
-  <tr><td>Omogući</td><td>Uključuje drugu vrstu referentne cijene. Opis: „Uključite kada pravilnik odredi referentni dan za baznu cijenu.” Kad je uključena, u cjeniku se pojavljuju dodatna polja (<code>BaznaCijena</code> u XML-u, <code>bazna_cijena</code> u CSV-u), na proizvodima dodatna polja, a na stranici druga oznaka.</td><td>isključeno</td><td>Ostavite isključeno dok pravilnik nije objavljen.</td></tr>
+  <tr><td>Omogući</td><td>Uključuje drugu vrstu referentne cijene. Opis: „Uključite kada pravilnik odredi referentni dan za baznu cijenu.” Kad je uključena, na proizvodima se pojavljuju dodatna polja, a na stranici druga oznaka. Ta druga vrsta <strong>ne ulazi u cjenik</strong>: stupac <code>bazna_cijena</code> uvijek sadrži sidrenu cijenu iz prvog odjeljka.</td><td>isključeno</td><td>Ostavite isključeno. Prema NN 132/2026 bazna cijena je redovna cijena na 10. 9. 2026., a to je već sidrena cijena.</td></tr>
   <tr><td>Naziv na stranici</td><td>Tekst oznake.</td><td><code>Bazna cijena na dan</code></td><td></td></tr>
   <tr><td>Referentni datum</td><td>Opis: „Referentni dan određuje pravilnik; ostavite prazno dok nije objavljen.”</td><td>prazno</td><td></td></tr>
   <tr><td>Iznimke po kategorijama / Automatski snapshot cijena / Snapshot obavljen</td><td>Isto kao kod sidrene cijene.</td><td>prazno</td><td></td></tr>
@@ -269,7 +269,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <table>
   <tr><th style="width:30%">Polje</th><th>Što znači</th><th style="width:12%">Zadano</th><th style="width:22%">Preporuka</th></tr>
   <tr><td>Varijacije nasljeđuju referentnu cijenu roditelja</td><td>Kada varijacija nema vlastitu referentnu cijenu, koristi se cijena varijabilnog proizvoda (upisana na roditelju).</td><td>isključeno</td><td>Uključite samo ako sve varijacije nekog proizvoda imaju istu sidrenu cijenu i želite je upisati jednom na roditelju.</td></tr>
-  <tr><td>Automatski „nema referentne cijene” za nove proizvode</td><td>Naslijeđena opcija alata za snimanje: takve proizvode može označiti kao „bez referentne cijene”. Automatsko hvatanje prve cijene u forku radi odvojeno.</td><td>uključeno</td><td>Za novi artikl provjerite prvu cijenu i datum; nemojte ga automatski izuzeti samo zbog kasnijeg uvođenja.</td></tr>
+  <tr><td>Snimanje cijena preskače nove proizvode</td><td>Djeluje na alat za snimanje (4.1). Kad je uključeno, alat preskače proizvode kreirane nakon referentnog datuma: njihova bazna cijena je cijena prve ponude, koju dodatak bilježi pri objavi. U dnevniku stoji „preskočeno – novi proizvod (cijena prve ponude)”. Kad je isključeno, i takvim se proizvodima kopira današnja redovna cijena.</td><td>uključeno</td><td>Ostavite uključeno. Za novi artikl provjerite prvu cijenu i datum.</td></tr>
 </table>
 
 <h2 id="ch3-3">3.3 Kartica „Prikaz”</h2>
@@ -301,42 +301,43 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 
 <h2 id="ch3-4">3.4 Kartica „Cjenik”</h2>
 <figure class="shot"><img src="img/postavke-cjenik.png" alt="Kartica „Cjenik” sa statusnim okvirom „Stanje cjenika”: javna adresa, provjera dostupnosti, zadnje i sljedeće generiranje te gumbi."><figcaption>Kartica „Cjenik” sa statusnim okvirom „Stanje cjenika”: javna adresa, provjera dostupnosti, zadnje i sljedeće generiranje te gumbi.</figcaption></figure>
-<p class="small">Uvodni tekst: „Cjenik robe objavljuje se svaki dan prije 08:00, cjenik usluga pri svakoj promjeni; verzije se čuvaju najmanje 30 dana.”</p>
+<p class="small">Uvodni tekst: „Cjenik robe i cjenik usluga (CSV) objavljuju se pri svakoj promjeni, najkasnije do 11:00 na dan promjene; dnevna provjera objavljuje novu datoteku samo ako se cjenik promijenio. Zamijenjene datoteke dostupne su još najmanje 15 dana.”</p>
 <table>
   <tr><th style="width:26%">Polje</th><th>Što znači</th><th style="width:15%">Zadano</th><th style="width:22%">Preporuka</th></tr>
-  <tr><td>Objavi strojno čitljiv cjenik</td><td>Glavni prekidač. Opis: „Obveza za sve trgovce s web stranicom od 17. 11. 2026.” Kad je isključen, adrese <span class="url">/cjenik/…</span> vraćaju 404 i zadaci se ne zakazuju.</td><td>uključeno</td><td>Ostavite uključeno.</td></tr>
-  <tr><td>Formati</td><td>XML i/ili CSV. Za svaki prodajni objekt generira se po jedna datoteka po formatu.</td><td>XML i CSV</td><td>Ostavite oba – zakon dopušta jedno ili drugo, a usporednici cijena često traže XML.</td></tr>
-  <tr><td>Putanja (slug)</td><td>Dio adrese iza domene. Opis: „Javna adresa cjenika: /{slug}/latest.xml”. Nakon promjene dodatak sam osvježava pravila trajnih veza.</td><td><code>cjenik</code></td><td>Ne mijenjajte; adresa <span class="url">/cjenik/</span> je očekivana.</td></tr>
-  <tr><td>Vrijeme dnevnog generiranja</td><td>Sat i minuta (po vremenskoj zoni trgovine) dnevnog generiranja. Opis: „Cjenik robe mora biti objavljen svaki dan prije 08:00.” Ako upišete vrijeme nakon 07:30, administracija prikazuje upozorenje.</td><td><code>06:00</code></td><td>Ostavite 06:00 – ostavlja dva sata rezerve za kašnjenje crona.</td></tr>
-  <tr><td>Regeneriraj pri promjeni cijene</td><td><em>Samo usluge</em>, <em>Svi proizvodi</em> ili <em>Nikad (samo dnevno)</em>. „Nikad (samo dnevno)” zadržava dnevno generiranje i povijest cijena. „Svi proizvodi” dodatno osvježava cjenik nakon promjena robe; to nije zakonski zahtjev.</td><td>Svi proizvodi</td><td>Za katalog robe odaberite „Nikad (samo dnevno)”. Usluge imaju zasebno pravilo ažuriranja.</td></tr>
-  <tr><td>Odgoda regeneriranja (s)</td><td>Opis: „Više promjena u ovom razdoblju spaja se u jedno generiranje.” Promjena napravljena prije 08:00 objavljuje se odmah ako bi je odgoda gurnula preko 07:55.</td><td><code>600</code> (10 min)</td><td>Za velike kataloge ostavite 600 ili više.</td></tr>
-  <tr><td>Čuvanje starih cjenika (dana)</td><td>Opis: „Zakonski minimum 30 dana.” Manje od 30 nije moguće upisati. Najnovija datoteka svakog objekta i formata nikad se ne briše.</td><td><code>35</code></td><td>35 ili više.</td></tr>
-  <tr><td>Uključi proizvode kojih nema na zalihi</td><td>Proizvodi sa statusom „nema na zalihi” ulaze u cjenik s dostupnošću „nedostupno”.</td><td>uključeno</td><td>Ostavite uključeno – Odluka predviđa polje dostupno/nedostupno.</td></tr>
+  <tr><td>OIB / matični broj trgovca</td><td>Opis: „OIB za pravnu osobu, matični broj za fizičku osobu. Obvezan dio naziva datoteke cjenika (NN 132/2026, čl. 6). Bez njega se novi cjenik ne objavljuje.”</td><td>prazno</td><td>Obavezno upišite. Dok ga nema, administracija prikazuje obavijest „novi cjenik ne objavljuje se dok ne unesete OIB …” (10.3).</td></tr>
+  <tr><td>Isti cjenik za sva prodajna mjesta</td><td>Opis: „Jedan cjenik robe i jedan cjenik usluga s oznakom ZA_SVA_PRODAJNA_MJESTA umjesto zasebnih datoteka po prodajnom objektu. Uključite samo ako su cijene i ponuda jednake na svim prodajnim mjestima.” Adrese poslovnica tada vode na zajednički cjenik.</td><td>isključeno</td><td>Za webshop bez poslovnica nije potrebno.</td></tr>
+  <tr><td>Objavi strojno čitljiv cjenik</td><td>Glavni prekidač. Opis: „Obveza za trgovce s web stranicom (Pravilnik o načinu objave cjenika proizvoda, NN 132/2026). Objavljuju se zasebni CSV cjenici robe i usluga.” Kad je isključen, adrese <span class="url">/cjenik/…</span> vraćaju 404 i zadaci se ne zakazuju.</td><td>uključeno</td><td>Ostavite uključeno.</td></tr>
+  <tr><td>Putanja (slug)</td><td>Dio adrese iza domene. Opis: „Javne adrese važećih cjenika: /{slug}/latest_roba.csv i /{slug}/latest_usluge.csv”. Nakon promjene dodatak sam osvježava pravila trajnih veza.</td><td><code>cjenik</code></td><td>Ne mijenjajte; adresa <span class="url">/cjenik/</span> je očekivana.</td></tr>
+  <tr><td>Vrijeme dnevne provjere</td><td>Sat i minuta (po vremenskoj zoni trgovine) dnevne provjere. Opis: „Jednom dnevno cijeli cjenik se ponovno izrađuje; novi se objavljuje samo ako se promijenio. Izmijenjeni cjenik mora biti objavljen do 11:00 na dan izmjene.” Ako upišete vrijeme nakon 10:30, administracija prikazuje upozorenje.</td><td><code>06:00</code></td><td>Ostavite 06:00.</td></tr>
+  <tr><td>Objava pri promjeni proizvoda</td><td><em>Pri promjeni (preporučeno)</em> ili <em>Samo dnevna provjera</em>. Opis: „Nakon spremanja proizvoda ažuriraju se samo promijenjeni redovi cjenika i objavljuje se novi cjenik ako se nešto promijenilo. ‚Samo dnevna provjera’ izmjene objavljuje tek pri dnevnoj provjeri.” Više u 7.2.</td><td>Pri promjeni (preporučeno)</td><td>Ostavite „Pri promjeni”.</td></tr>
+  <tr><td>Odgoda regeneriranja (s)</td><td>Opis: „Više promjena u ovom razdoblju spaja se u jedno generiranje.” Promjena napravljena prije 11:00 objavljuje se odmah ako bi je odgoda gurnula iza 10:55.</td><td><code>600</code> (10 min)</td><td>Ostavite 600. Ako se cijene mijenjaju stalno, 1800–3600 daje manje datoteka (7.2).</td></tr>
+  <tr><td>Čuvanje arhivskih cjenika (dana)</td><td>Opis: „Koliko dana zamijenjeni cjenik ostaje dostupan. Zakonski minimum 15 dana od zamjene (NN 132/2026, čl. 3(6)).” Manje od 15 nije moguće upisati. Važeći cjenik svakog objekta i vrste nikad se ne briše. Nadogradnja s 1.x zadržava ranije upisanu vrijednost.</td><td><code>15</code></td><td>15 ili više; veći broj zauzima više mjesta na disku.</td></tr>
+  <tr><td>Uključi proizvode kojih nema na zalihi</td><td>Proizvodi sa statusom „nema na zalihi” ulaze u cjenik.</td><td>uključeno</td><td>Ostavite uključeno. Cjenik ne sadrži zalihu, pa promjena količine na zalihi (npr. nakon narudžbe) tada ne pokreće novu objavu.</td></tr>
   <tr><td>Uključi skrivene proizvode</td><td>Proizvodi s vidljivošću „skriveno” (dostupni izravnim linkom) ulaze u cjenik.</td><td>uključeno</td><td>Ostavite uključeno – i skriveni proizvodi se prodaju.</td></tr>
-  <tr><td>Što je usluga</td><td>Pravilo po kojem se proizvod svrstava u odjeljak „Usluge”: <em>Virtualni proizvod ili oznaka „Ovo je usluga”</em>, <em>Samo virtualni proizvodi</em>, <em>Samo oznaka „Ovo je usluga”</em>, <em>Svi proizvodi su usluge</em>, <em>Nema usluga</em>.</td><td>Virtualni proizvod ili oznaka „Ovo je usluga”</td><td>Ako prodajete virtualne proizvode koji nisu usluge (npr. e-knjige), odaberite „Samo oznaka”.</td></tr>
-  <tr><td>Zadani naziv posebnog oblika prodaje</td><td>Naziv koji se upisuje u cjenik za proizvode na akciji koji nemaju vlastiti naziv (polje na proizvodu).</td><td><code>Sniženje</code></td><td></td></tr>
-  <tr><td>CSV razdjelnik</td><td>Točka-zarez (;), Zarez (,) ili Tabulator.</td><td>Točka-zarez (;)</td><td>Ostavite „;” – standard za hrvatski Excel.</td></tr>
+  <tr><td>Što je usluga</td><td>Pravilo po kojem proizvod ide u cjenik usluga umjesto u cjenik robe: <em>Virtualni proizvod ili oznaka „Ovo je usluga”</em>, <em>Samo virtualni proizvodi</em>, <em>Samo oznaka „Ovo je usluga”</em>, <em>Svi proizvodi su usluge</em>, <em>Nema usluga</em>.</td><td>Virtualni proizvod ili oznaka „Ovo je usluga”</td><td>Ako prodajete virtualne proizvode koji nisu usluge (npr. e-knjige), odaberite „Samo oznaka”.</td></tr>
   <tr><td>CSV s UTF-8 BOM (za Excel)</td><td>Dodaje oznaku kodiranja da Excel ispravno prikaže č, ć, š, ž, đ.</td><td>uključeno</td><td></td></tr>
-  <tr><td>Cijene u cjeniku</td><td><em>S PDV-om (maloprodajne)</em> ili <em>Bez PDV-a</em>.</td><td>S PDV-om</td><td>Ostavite „S PDV-om” – Odluka traži maloprodajne cijene.</td></tr>
   <tr><td>Ključ za vanjski cron</td><td>Tajni ključ za pokretanje generiranja izvana. Opis: „Za pokretanje generiranja izvana: /cjenik/?scwc_run=1&amp;key=KLJUČ (npr. iz sistemskog crona).” Generira se automatski.</td><td>automatski 32 znaka</td><td>Ne dijelite ključ javno. Ako ga obrišete i spremite, generira se novi.</td></tr>
 </table>
+<p>Postavke „Formati”, „CSV razdjelnik”, „Cijene u cjeniku” i „Zadani naziv posebnog oblika prodaje” uklonjene su u verziji 2.0: cjenik je uvijek CSV s razdjelnikom „;”, cijene su maloprodajne (s PDV-om), a posebni oblik prodaje upisuje se kao „da” ili „ne”.</p>
 
 <h3>Okvir „Stanje cjenika” i tri gumba</h3>
 <p>Ispod polja nalazi se okvir <strong>„Stanje cjenika”</strong> s redcima:</p>
 <table>
   <tr><th style="width:30%">Redak</th><th>Sadržaj</th></tr>
-  <tr><td>Zadnje generiranje</td><td>„nikad” ili datum i vrijeme, broj proizvoda i usluga te nazivi generiranih datoteka. Ako zadnje generiranje nije uspjelo, poruka greške prikazuje se crveno.</td></tr>
-  <tr><td>Sljedeće generiranje</td><td>Datum i vrijeme sljedećeg dnevnog generiranja ili „nije zakazano”.</td></tr>
+  <tr><td>Javna adresa cjenika</td><td>Adresa <span class="url">https://vasa-trgovina.hr/cjenik/</span> s napomenom da adresa nije /cijene.</td></tr>
+  <tr><td>Provjera dostupnosti</td><td>Rezultat provjere adrese <span class="url">/cjenik/latest.csv</span> (važeći cjenik robe): „u redu – cjenik je javno dostupan”, „nije pronađen …”, „blokirano …” (zaštita od robota, CDN ili lozinka) ili poruka da poslužitelj ne može dohvatiti vlastitu adresu.</td></tr>
+  <tr><td>Zadnje generiranje</td><td>„nikad” ili datum i vrijeme zadnje provjere, broj proizvoda i usluga te nazivi zadnje objavljenih datoteka. Provjera bez promjena ne mijenja nazive datoteka. Ako zadnje generiranje nije uspjelo, poruka greške prikazuje se crveno.</td></tr>
+  <tr><td>Sljedeće generiranje</td><td>Datum i vrijeme sljedeće dnevne provjere (ili ranije zakazane objave promjena) ili „nije zakazano”.</td></tr>
   <tr><td>Sljedeća provjera cijena</td><td>Sljedeći termin dnevne provjere povijesti cijena ili „nije zakazano”.</td></tr>
   <tr><td>Zakazano automatsko snimanje</td><td>Prikazuje se samo ako je u kartici Referentne cijene zakazan automatski snapshot.</td></tr>
   <tr><td>Mehanizam zakazivanja</td><td>„Action Scheduler” ili „WP-Cron”.</td></tr>
-  <tr><td>Javni URL-ovi</td><td>Poveznice: Popis · latest.xml · latest.csv · index.json.</td></tr>
-  <tr><td>Po prodajnom objektu</td><td>Prikazuje se kad postoji više prodajnih objekata: za svaki latest.xml i latest.csv.</td></tr>
+  <tr><td>Javni URL-ovi</td><td>Poveznice: Popis · latest_roba.csv · latest_usluge.csv · index.json.</td></tr>
+  <tr><td>Po prodajnom objektu</td><td>Prikazuje se kad postoji više prodajnih objekata: za svaki latest_roba.csv i latest_usluge.csv.</td></tr>
   <tr><td>Vanjski cron (GET)</td><td>Gotova adresa <span class="url">https://vasa-trgovina.hr/cjenik/?scwc_run=1&amp;key=…</span> za kopiranje u vanjski cron.</td></tr>
 </table>
 <p>Gumbi ispod tablice:</p>
 <ul>
-  <li><strong>„Generiraj sada”</strong> – zakazuje generiranje za sve prodajne objekte i formate. Poruka potvrđuje zakazivanje; dovršetak i eventualnu grešku provjerite u stanju cjenika i Zakazanim radnjama.</li>
+  <li><strong>„Generiraj sada”</strong> – zakazuje izradu cjenika za sve prodajne objekte. Poruka: „Generiranje cjenika je zakazano. Posljednji dovršeni cjenik ostaje dostupan.” Nova datoteka objavljuje se samo ako se cjenik promijenio. Dovršetak i eventualnu grešku provjerite u stanju cjenika i Zakazanim radnjama.</li>
   <li><strong>„Provjeri cijene sada”</strong> – odmah pokreće provjeru i bilježenje trenutnih cijena svih proizvoda u povijest (isto što radi noćna provjera). Poruka: „Provjera cijena je pokrenuta.”</li>
   <li><strong>„Ponovno zakaži zadatke”</strong> – briše i ponovno stvara sve zakazane zadatke (generiranje, provjera, čišćenje, automatski snapshot). Poruka: „Zadaci su ponovno zakazani.” Koristite kad okvir pokazuje „nije zakazano”.</li>
 </ul>
@@ -356,7 +357,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
 <figure class="shot"><img src="img/postavke-napredno.png" alt="Kartica „Napredno”."><figcaption>Kartica „Napredno”.</figcaption></figure>
 <table>
   <tr><th style="width:30%">Polje</th><th>Što znači</th><th style="width:15%">Zadano</th><th style="width:20%">Preporuka</th></tr>
-  <tr><td>Obriši sve podatke pri deinstalaciji</td><td>Opis: „Postavke, meta podatke proizvoda, povijest cijena i generirane cjenike.” Primjenjuje se samo pri brisanju dodatka, ne pri deaktivaciji.</td><td>isključeno</td><td>Ostavite isključeno dok traje obveza čuvanja 30 dana.</td></tr>
+  <tr><td>Obriši sve podatke pri deinstalaciji</td><td>Opis: „Postavke, meta podatke proizvoda, povijest cijena i generirane cjenike.” Primjenjuje se samo pri brisanju dodatka, ne pri deaktivaciji.</td><td>isključeno</td><td>Ostavite isključeno; zamijenjeni cjenici moraju ostati dostupni 15 dana.</td></tr>
   <tr><td>Zapisuj dijagnostiku u WooCommerce log</td><td>Dodatne poruke u WooCommerce → Status → Zapisnici.</td><td>isključeno</td><td>Uključite samo na zahtjev podrške.</td></tr>
 </table>
 </div>
@@ -381,7 +382,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
   <tr><td>Opcija: <strong>Preskoči proizvode koji su trenutno na akciji</strong></td><td>Proizvodi na akciji se preskaču („preskočeno – na akciji”). Bez ove opcije i za proizvod na akciji kopira se njegova <em>redovna</em> (ne akcijska) cijena, što je obično ispravno.</td></tr>
   <tr><td>Opcija: <strong>Probno izvršavanje</strong> (samo prikaži što bi se dogodilo, ništa ne zapisuj)</td><td>Prolazi kroz sve proizvode i prikazuje brojeve i primjere, ali ništa ne mijenja. Dnevnik dobiva oznaku „(probno – ništa nije zapisano)”.</td></tr>
 </table>
-<p>Ako je u postavkama uključeno „Automatski ‚nema referentne cijene’ za nove proizvode”, ispod opcija stoji napomena da će proizvodi kreirani nakon datuma referentne cijene biti označeni kao „bez referentne cijene”.</p>
+<p>Ako je u postavkama uključeno „Snimanje cijena preskače nove proizvode” (zadano), alat preskače proizvode kreirane nakon datuma referentne cijene: njihova bazna cijena je cijena prve ponude (3.2).</p>
 
 <h3>Korak po korak</h3>
 <ol>
@@ -389,7 +390,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
   <li>Ostavite način „Samo nedostajuće”.</li>
   <li>Uključite „Probno izvršavanje” i kliknite <strong>„Pokreni”</strong>. Pregledajte dnevnik i tablicu primjera (stupci: ID, Šifra, Naziv, Redovna cijena, Radnja).</li>
   <li>Ako su brojevi očekivani, isključite probno izvršavanje i ponovno kliknite „Pokreni”. Potvrdite pitanje „Zapisati referentne cijene za sve proizvode? Ova radnja mijenja podatke proizvoda.”</li>
-  <li>Pričekajte poruku „Gotovo.” Dnevnik za svaki dio prikazuje: obrađeno, zapisano, preskočeno (postoji), preskočeno (na akciji), bez cijene, označeno „bez referentne cijene”.</li>
+  <li>Pričekajte poruku „Gotovo.” Dnevnik za svaki dio prikazuje: obrađeno, zapisano, preskočeno (postoji), preskočeno (na akciji), bez cijene, preskočeno (novi proizvod).</li>
 </ol>
 
 <h3>Što se s kojim proizvodom događa</h3>
@@ -397,7 +398,7 @@ figure.shot figcaption { font-size: 9pt; color: #555; margin-top: 0.35em; }
   <tr><th style="width:32%">Radnja u dnevniku</th><th>Kada</th></tr>
   <tr><td>zapisano</td><td>Redovna cijena kopirana kao sidrena; izvor na proizvodu: „snapshot”. Redovna cijena 0 € (besplatan proizvod) zapisuje se kao sidrena cijena 0 €.</td></tr>
   <tr><td>preskočeno – već postoji</td><td>Način „Samo nedostajuće” i proizvod već ima sidrenu cijenu ili oznaku „nema referentne cijene”.</td></tr>
-  <tr><td>označeno – bez referentne cijene</td><td>Proizvod je kreiran <em>nakon</em> referentnog datuma (po datumu kreiranja u WooCommerceu) i postavka „Automatski ‚nema referentne cijene’ za nove proizvode” je uključena. Na proizvodu se postavlja kvačica „Nema referentne cijene”; kupac vidi samo aktualnu cijenu.</td></tr>
+  <tr><td>preskočeno – novi proizvod (cijena prve ponude)</td><td>Proizvod je kreiran <em>nakon</em> referentnog datuma (po datumu kreiranja u WooCommerceu) i postavka „Snimanje cijena preskače nove proizvode” je uključena. Ništa se ne zapisuje: njegova bazna cijena je cijena prve ponude, koju dodatak bilježi pri objavi proizvoda. Ako je nema, unesite je ručno.</td></tr>
   <tr><td>preskočeno – bez cijene</td><td>Proizvod nema redovnu cijenu (prazno polje). Ništa se ne zapisuje.</td></tr>
   <tr><td>preskočeno – na akciji</td><td>Uključena opcija „Preskoči proizvode koji su trenutno na akciji”.</td></tr>
 </table>
@@ -494,14 +495,13 @@ ABC-003;;;anchor</pre>
 <h2>5.2 Podaci za cjenik</h2>
 <table>
   <tr><th style="width:36%">Polje</th><th>Što znači</th></tr>
-  <tr><td>Ovo je usluga</td><td>Kvačica. Opis: „Cjenik usluga regenerira se pri svakoj promjeni cijene.” Proizvod ide u odjeljak „Usluge” cjenika (ovisno o pravilu „Što je usluga” u postavkama).</td></tr>
+  <tr><td>Ovo je usluga</td><td>Kvačica. Opis: „Cjenik usluga regenerira se pri svakoj promjeni cijene.” Proizvod ide u cjenik usluga umjesto u cjenik robe (ovisno o pravilu „Što je usluga” u postavkama).</td></tr>
   <tr><td>Jedinica mjere (kg, l, m, kom)</td><td>Tekst koji ide u polje „jedinica mjere” cjenika.</td></tr>
-  <tr><td>Neto količina u jedinici mjere</td><td>Broj. Opis: „Cijena za jedinicu mjere = cijena / neto količina.” Npr. za pakiranje 0,5 kg upišite 0.5 uz jedinicu „kg”: cjenik dobiva cijenu po kilogramu. Prazno = polje „cijena za jedinicu mjere” u cjeniku ostaje prazno.</td></tr>
-  <tr><td>Naziv posebnog oblika prodaje</td><td>Opis: „Npr. sniženje, akcija, rasprodaja. Prazno = zadani naziv iz postavki.” Upisuje se u cjenik samo dok je proizvod na akciji.</td></tr>
+  <tr><td>Neto količina u jedinici mjere</td><td>Broj. Opis: „Cijena za jedinicu mjere = cijena / neto količina.” Npr. za pakiranje 0,5 kg upišite 0.5 uz jedinicu „kg”: cjenik dobiva neto količinu 0.5 i cijenu po kilogramu. Prazno = stupci „neto količina” i „cijena za jedinicu mjere” ostaju prazni.</td></tr>
   <tr><td>Isključi iz cjenika</td><td>Kvačica. Proizvod se ne navodi u cjeniku. Koristite samo za stavke koje nisu roba ni usluga (npr. donacije).</td></tr>
   <tr><td>Cijena na upit (isključeno iz cjenika)</td><td>Kvačica za proizvode bez fiksne cijene. Proizvod se ne navodi u cjeniku.</td></tr>
 </table>
-<p>Varijacije nasljeđuju „Ovo je usluga”, jedinicu mjere, neto količinu, naziv posebnog oblika prodaje i obje kvačice isključenja od roditelja ako nemaju vlastitu vrijednost.</p>
+<p>Varijacije nasljeđuju „Ovo je usluga”, jedinicu mjere, neto količinu i obje kvačice isključenja od roditelja ako nemaju vlastitu vrijednost. Polje „Naziv posebnog oblika prodaje” uklonjeno je u verziji 2.0 (cjenik bilježi samo da/ne).</p>
 
 <h2>5.3 Okvir „Najniža cijena u 30 dana”</h2>
 <p>Prikazuje se samo dok je proizvod na sniženju i dodatak ima izračunatu vrijednost. Redci: <strong>Referentna cijena</strong> (najniža cijena u 30 dana prije sniženja, u €), <strong>Početak sniženja</strong> (datum i vrijeme, UTC) i <strong>Izvor</strong>: <code>history</code> (iz zabilježene povijesti), <code>regular_fallback</code> (nije bilo dovoljno povijesti pa je uzeta redovna cijena – provjerite je li točno) ili <code>insufficient</code>. Vrijednost se ne mijenja dok traje isto sniženje (i ako cijenu dodatno spustite), a briše se kad sniženje završi.</p>
@@ -517,58 +517,61 @@ ABC-003;;;anchor</pre>
 <div class="box-important">
 <strong>Adresa cjenika je</strong>
 <span class="big-url">https://vasa-trgovina.hr/cjenik/</span>
-(a <strong>ne</strong> <span class="url">/cijene</span>, <span class="url">/cjenik.xml</span> ili <span class="url">/cjenik.html</span>). Na toj adresi nalazi se javna stranica s popisom svih datoteka; najnovija XML datoteka uvijek je na <span class="url">https://vasa-trgovina.hr/cjenik/latest.xml</span>, a CSV na <span class="url">https://vasa-trgovina.hr/cjenik/latest.csv</span>. Tu adresu navedite inspekciji, usporednicima cijena i u podnožju stranice.
+(a <strong>ne</strong> <span class="url">/cijene</span>, <span class="url">/cjenik.csv</span> ili <span class="url">/cjenik.html</span>). Na toj adresi nalazi se javna stranica s popisom svih datoteka. Važeći cjenik robe uvijek je na <span class="url">https://vasa-trgovina.hr/cjenik/latest_roba.csv</span>, a cjenik usluga na <span class="url">https://vasa-trgovina.hr/cjenik/latest_usluge.csv</span>. Te adrese navedite inspekciji, usporednicima cijena i u podnožju stranice.
 </div>
 
 <h2>6.1 Sve javne adrese</h2>
 <table>
   <tr><th style="width:44%">Adresa</th><th>Sadržaj</th></tr>
-  <tr><td><span class="url">/cjenik/</span></td><td>Javna HTML stranica: naziv trgovca, za svaki prodajni objekt podaci (oblik, adresa, oznaka, broj pohrane), gumbi „Najnoviji cjenik (XML)” i „(CSV)” te tablica svih čuvanih datoteka (naziv, format, vrijeme generiranja, broj proizvoda i usluga, veličina) s poveznicama. Ne kešira se.</td></tr>
-  <tr><td><span class="url">/cjenik/latest.xml</span><br><span class="url">/cjenik/latest.csv</span></td><td>Najnovija datoteka webshopa (glavnog prodajnog objekta). Adresa je stalna; sadržaj se mijenja nakon svakog generiranja. Poslužuje se s <code>no-cache</code> zaglavljima i zaglavljem <code>X-SCWC-Latest</code> koje sadrži pravi naziv datoteke.</td></tr>
+  <tr><td><span class="url">/cjenik/</span></td><td>Javna HTML stranica: naziv trgovca, za svaki prodajni objekt podaci (oblik, adresa, oznaka), poveznice „Važeći cjenik robe” i „Važeći cjenik usluga” te tablica svih čuvanih datoteka (datoteka, vrsta, vrijeme objave, broj proizvoda i usluga, veličina). Ne kešira se.</td></tr>
+  <tr><td><span class="url">/cjenik/latest_roba.csv</span><br><span class="url">/cjenik/latest_usluge.csv</span></td><td>Važeći cjenik robe odnosno usluga webshopa (glavnog prodajnog objekta). Adresa je stalna; sadržaj se mijenja s novom objavom. Poslužuje se s <code>no-cache</code> zaglavljima i zaglavljem <code>X-SCWC-Latest</code> koje sadrži pravi naziv datoteke. Ako trgovina nikad nije imala usluga, cjenik usluga se ne objavljuje i adresa vraća 404.</td></tr>
+  <tr><td><span class="url">/cjenik/latest.csv</span><br><span class="url">/cjenik/latest.xml</span></td><td>Adrese iz verzije 1.x, zadržane radi postojećih poveznica. Vode na važeći cjenik robe (u trgovini koja ima samo usluge na cjenik usluga); i <code>latest.xml</code> vraća CSV datoteku. Dok nova verzija ne objavi prvi cjenik, vraćaju zadnju staru datoteku.</td></tr>
   <tr><td><span class="url">/cjenik/index.json</span></td><td>Strojno čitljiv popis svih prodajnih objekata i datoteka (v. 6.3).</td></tr>
-  <tr><td><span class="url">/cjenik/{oznaka}/</span><br><span class="url">/cjenik/{oznaka}/latest.xml</span><br><span class="url">/cjenik/{oznaka}/latest.csv</span><br><span class="url">/cjenik/{oznaka}/index.json</span></td><td>Isto za pojedini prodajni objekt. <code>{oznaka}</code> je trajni ključ objekta izveden iz oznake (mala slova, bez dijakritike, crtice), npr. <span class="url">/cjenik/web1/latest.xml</span> ili <span class="url">/cjenik/poslovnica-split/latest.csv</span>. Radi i za webshop.</td></tr>
-  <tr><td><span class="url">/cjenik/{naziv-datoteke}.xml</span><br><span class="url">/cjenik/{naziv-datoteke}.csv</span></td><td>Točno određena (arhivirana) verzija po punom nazivu datoteke, npr. <span class="url">/cjenik/webshop_ilica-1-10000-zagreb_web1_1_20261001_060012.xml</span>. Dostupna dok traje razdoblje čuvanja. Kešira se do 24 sata (sadržaj se ne mijenja).</td></tr>
+  <tr><td><span class="url">/cjenik/{oznaka}/</span><br><span class="url">/cjenik/{oznaka}/latest_roba.csv</span><br><span class="url">/cjenik/{oznaka}/latest_usluge.csv</span><br><span class="url">/cjenik/{oznaka}/index.json</span></td><td>Isto za pojedini prodajni objekt. <code>{oznaka}</code> je trajni ključ objekta izveden iz oznake (mala slova, bez dijakritike, crtice), npr. <span class="url">/cjenik/web1/latest_roba.csv</span> ili <span class="url">/cjenik/poslovnica-split/latest_usluge.csv</span>. Radi i za webshop. Kad je uključeno „Isti cjenik za sva prodajna mjesta”, adrese svih objekata vode na zajednički cjenik.</td></tr>
+  <tr><td><span class="url">/cjenik/{naziv-datoteke}.csv</span></td><td>Točno određena (arhivirana) verzija po punom nazivu datoteke, npr. <span class="url">/cjenik/12345678901_webshop_ilica-1-10000-zagreb_web1_ROBA_7_20261117_0605.csv</span>. Dostupna dok traje razdoblje čuvanja. Kešira se do 24 sata (sadržaj se ne mijenja). Stare XML i CSV datoteke iz verzije 1.x dostupne su na isti način dok ne isteknu.</td></tr>
   <tr><td><span class="url">/wp-content/uploads/scwc-cjenik/{naziv-datoteke}</span></td><td><strong>Izravna adresa datoteke</strong> na disku (mapa <code>uploads/scwc-cjenik/</code>). Ne ovisi o postavkama trajnih veza; navedena je u index.json kao <code>direct_url</code> i na popisu strelicom ↗.</td></tr>
-  <tr><td><span class="url">/cjenik/?scwc_run=1&amp;key=KLJUČ</span></td><td>Pokreće generiranje izvana (vanjski cron). Vraća <code>{"ok":true}</code> ili <code>{"ok":false,"error":"forbidden"}</code> ako ključ ne odgovara. Ključ je u kartici Cjenik.</td></tr>
+  <tr><td><span class="url">/cjenik/?scwc_run=1&amp;key=KLJUČ</span></td><td>Pokreće generiranje izvana (vanjski cron). Vraća <code>{"ok":true,"queued":true}</code> ili <code>{"ok":false,"error":"forbidden"}</code> ako ključ ne odgovara. Ključ je u kartici Cjenik.</td></tr>
 </table>
-<p>Sve adrese odgovaraju bez prijave, bez zaštite od robota i s CORS zaglavljem <code>Access-Control-Allow-Origin: *</code>, pa ih mogu dohvaćati i skripte s drugih domena. Datoteke nose zaglavlje <code>X-Robots-Tag: noindex</code> (ne pojavljuju se u Google rezultatima, ali su dostupne svakom alatu), a u <code>robots.txt</code> dodatak dodaje <code>Allow: /cjenik/</code>. Ako su trajne veze postavljene na „obične”, iste adrese dostupne su u obliku <span class="url">/?scwc_cjenik=latest&amp;scwc_format=xml</span> (v. poglavlje 10).</p>
+<p>Sve adrese odgovaraju bez prijave, bez zaštite od robota i s CORS zaglavljem <code>Access-Control-Allow-Origin: *</code>, pa ih mogu dohvaćati i skripte s drugih domena. Datoteke nose zaglavlje <code>X-Robots-Tag: noindex</code> (ne pojavljuju se u Google rezultatima, ali su dostupne svakom alatu) i <code>ETag</code> (SHA-256 sažetak): alat koji ga pošalje natrag dobiva odgovor 304 dok se datoteka ne promijeni. U <code>robots.txt</code> dodatak dodaje <code>Allow: /cjenik/</code>. Ako su trajne veze postavljene na „obične”, iste adrese dostupne su u obliku <span class="url">/?scwc_cjenik=latest&amp;scwc_kind=roba&amp;scwc_format=csv</span> (v. poglavlje 10).</p>
 
 <h2>6.2 Naziv datoteke, dio po dio</h2>
-<p>Primjer: <code>webshop_ilica-1-10000-zagreb_web1_1_20261001_060012.xml</code></p>
+<p>Primjer: <code>12345678901_webshop_ilica-1-10000-zagreb_web1_ROBA_7_20261117_0605.csv</code></p>
 <table>
-  <tr><th style="width:26%">Dio</th><th style="width:20%">Iz čega nastaje</th><th>Primjer</th></tr>
+  <tr><th style="width:26%">Dio</th><th style="width:26%">Iz čega nastaje</th><th>Primjer</th></tr>
+  <tr><td><code>12345678901</code></td><td>OIB / matični broj trgovca (kartica Cjenik)</td><td>OIB pravne osobe ili matični broj fizičke osobe</td></tr>
   <tr><td><code>webshop</code></td><td>Oblik prodajnog objekta</td><td>„webshop” (za poslovnice npr. „poslovnica”)</td></tr>
   <tr><td><code>ilica-1-10000-zagreb</code></td><td>Adresa prodajnog objekta</td><td>„Ilica 1, 10000 Zagreb” → mala slova, bez dijakritike, razmaci i zarezi postaju crtica</td></tr>
   <tr><td><code>web1</code></td><td>Oznaka prodajnog objekta</td><td>„Web1”</td></tr>
-  <tr><td><code>1</code></td><td>Broj pohrane / broj pohrane</td><td>„1”</td></tr>
-  <tr><td><code>20261001</code></td><td>Datum generiranja (GGGGMMDD)</td><td>17. 11. 2026.</td></tr>
-  <tr><td><code>060012</code></td><td>Vrijeme generiranja (HHMMSS, vremenska zona trgovine)</td><td>06:00:12</td></tr>
-  <tr><td><code>.xml</code> / <code>.csv</code></td><td>Format</td><td></td></tr>
+  <tr><td><code>ROBA</code> / <code>USLUGE</code></td><td>Vrsta cjenika</td><td>cjenik robe ili cjenik usluga</td></tr>
+  <tr><td><code>7</code></td><td>Broj pohrane: redni broj objave za taj objekt i vrstu</td><td>prva objava 1, svaka sljedeća za jedan veća</td></tr>
+  <tr><td><code>20261117</code></td><td>Datum objave (GGGGMMDD)</td><td>17. 11. 2026.</td></tr>
+  <tr><td><code>0605</code></td><td>Vrijeme objave (SSMM: sati i minute, vremenska zona trgovine)</td><td>06:05</td></tr>
+  <tr><td><code>.csv</code></td><td>Format</td><td>uvijek CSV</td></tr>
 </table>
-<p>Dijelovi su odvojeni donjom crtom. Ako neki podatak nije upisan, na njegovo mjesto dolazi <code>na</code>. Svaki prodajni objekt i svaki format dobiva vlastitu datoteku pri svakom generiranju.</p>
+<p>Dijelovi su odvojeni donjom crtom. Ako neki podatak nije upisan, na njegovo mjesto dolazi <code>na</code>. Kad je uključeno „Isti cjenik za sva prodajna mjesta”, oblik, adresa i oznaka zamjenjuju se oznakom <code>ZA_SVA_PRODAJNA_MJESTA</code>, npr. <code>12345678901_ZA_SVA_PRODAJNA_MJESTA_USLUGE_3_20261117_0605.csv</code>.</p>
 
 <h2>6.3 index.json</h2>
-<p>Namijenjen automatiziranim alatima. Sadrži <code>base_url</code>, podatke glavnog objekta i popis <code>outlets</code>; za svaki objekt: <code>key</code>, <code>primary</code>, <code>form</code>, <code>address</code>, <code>label</code>, <code>storage_number</code>, <code>merchant_name</code>, <code>url</code>, <code>latest</code> (adrese latest.xml/csv) i <code>files</code> (za svaku datoteku: <code>name</code>, <code>format</code>, <code>url</code>, <code>direct_url</code>, <code>generated_at</code>, <code>size</code>, <code>products</code>, <code>services</code>, <code>sha256</code>). Skraćeni primjer:</p>
+<p>Namijenjen automatiziranim alatima. Sadrži <code>base_url</code>, podatke glavnog objekta i popis <code>outlets</code>; za svaki objekt: <code>key</code>, <code>primary</code>, <code>form</code>, <code>address</code>, <code>label</code>, <code>merchant_name</code>, <code>url</code>, <code>latest</code> (adrese <code>roba</code> i <code>usluge</code>, samo za objavljene vrste) i <code>files</code> (za svaku datoteku: <code>name</code>, <code>format</code>, <code>kind</code> – <code>roba</code>, <code>usluge</code> ili prazno za datoteke iz 1.x –, <code>url</code>, <code>direct_url</code>, <code>generated_at</code>, <code>size</code>, <code>products</code>, <code>services</code>, <code>sha256</code>). Polje <code>storage_number</code> ostalo je iz verzije 1.x i ne ulazi u naziv datoteke. Skraćeni primjer:</p>
 <pre>{
   "base_url": "https://vasa-trgovina.hr/cjenik/",
   "outlets": [
     {
       "key": "web1", "primary": true, "form": "webshop",
-      "address": "Ilica 1, 10000 Zagreb", "label": "Web1", "storage_number": "1",
+      "address": "Ilica 1, 10000 Zagreb", "label": "Web1",
       "merchant_name": "Vaša trgovina d.o.o.",
       "url": "https://vasa-trgovina.hr/cjenik/",
       "latest": {
-        "xml": "https://vasa-trgovina.hr/cjenik/latest.xml",
-        "csv": "https://vasa-trgovina.hr/cjenik/latest.csv"
+        "roba": "https://vasa-trgovina.hr/cjenik/latest_roba.csv",
+        "usluge": "https://vasa-trgovina.hr/cjenik/latest_usluge.csv"
       },
       "files": [
         {
-          "name": "webshop_ilica-1-10000-zagreb_web1_1_20261001_060012.xml",
-          "format": "xml",
-          "url": "https://vasa-trgovina.hr/cjenik/webshop_ilica-1-10000-zagreb_web1_1_20261001_060012.xml",
-          "direct_url": "https://vasa-trgovina.hr/wp-content/uploads/scwc-cjenik/webshop_ilica-1-10000-zagreb_web1_1_20261001_060012.xml",
-          "generated_at": "2026-10-01T06:00:12+02:00",
-          "size": 184320, "products": 412, "services": 3,
+          "name": "12345678901_webshop_ilica-1-10000-zagreb_web1_ROBA_7_20261117_0605.csv",
+          "format": "csv", "kind": "roba",
+          "url": "https://vasa-trgovina.hr/cjenik/12345678901_webshop_ilica-1-10000-zagreb_web1_ROBA_7_20261117_0605.csv",
+          "direct_url": "https://vasa-trgovina.hr/wp-content/uploads/scwc-cjenik/12345678901_webshop_ilica-1-10000-zagreb_web1_ROBA_7_20261117_0605.csv",
+          "generated_at": "2026-11-17T06:05:12+01:00",
+          "size": 184320, "products": 412, "services": 0,
           "sha256": "9f2c…"
         }
       ]
@@ -576,91 +579,61 @@ ABC-003;;;anchor</pre>
   ]
 }</pre>
 
-<h2>6.4 Struktura XML datoteke</h2>
-<p>Korijenski element <code>Cjenik</code> nosi verziju strukture, vrijeme generiranja i izvor. Slijedi <code>ProdajniObjekt</code>, zatim <code>Proizvodi</code> (po jedan <code>Proizvod</code>) i <code>Usluge</code> (po jedna <code>Usluga</code>). Iznosi su s točkom i dvije decimale, s PDV-om (osim ako je u postavkama odabrano „Bez PDV-a”). Skraćeni primjer s jednim proizvodom na sniženju i jednom uslugom:</p>
-<pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
-&lt;Cjenik verzija="1.0" generirano="2026-10-01T06:00:12+02:00" izvor="sidrena-cijena-za-woocommerce/1.1.2"&gt;
-  &lt;ProdajniObjekt&gt;
-    &lt;Oblik&gt;webshop&lt;/Oblik&gt;
-    &lt;Adresa&gt;Ilica 1, 10000 Zagreb&lt;/Adresa&gt;
-    &lt;Oznaka&gt;Web1&lt;/Oznaka&gt;
-    &lt;BrojPohrane&gt;1&lt;/BrojPohrane&gt;
-    &lt;Naziv&gt;Vaša trgovina d.o.o.&lt;/Naziv&gt;
-    &lt;Url&gt;https://vasa-trgovina.hr/&lt;/Url&gt;
-  &lt;/ProdajniObjekt&gt;
-  &lt;Proizvodi&gt;
-    &lt;Proizvod&gt;
-      &lt;Naziv&gt;Maslinovo ulje ekstra djevičansko 0,5 l&lt;/Naziv&gt;
-      &lt;Sifra&gt;ABC-001&lt;/Sifra&gt;
-      &lt;Marka&gt;Uljara Adria&lt;/Marka&gt;
-      &lt;JedinicaMjere&gt;l&lt;/JedinicaMjere&gt;
-      &lt;CijenaZaJedinicuMjere&gt;25.98&lt;/CijenaZaJedinicuMjere&gt;
-      &lt;MaloprodajnaCijena&gt;12.99&lt;/MaloprodajnaCijena&gt;
-      &lt;PosebniOblikProdaje&gt;da&lt;/PosebniOblikProdaje&gt;
-      &lt;NazivPosebnogOblikaProdaje&gt;Sniženje&lt;/NazivPosebnogOblikaProdaje&gt;
-      &lt;SidrenaCijena datum="2026-09-10"&gt;14.99&lt;/SidrenaCijena&gt;
-      &lt;NajnizaCijena30Dana&gt;12.49&lt;/NajnizaCijena30Dana&gt;
-      &lt;Barkod&gt;3850123456789&lt;/Barkod&gt;
-      &lt;Dostupnost&gt;dostupno&lt;/Dostupnost&gt;
-      &lt;Url&gt;https://vasa-trgovina.hr/proizvod/maslinovo-ulje/&lt;/Url&gt;
-    &lt;/Proizvod&gt;
-  &lt;/Proizvodi&gt;
-  &lt;Usluge&gt;
-    &lt;Usluga&gt;
-      &lt;NazivUsluge&gt;Montaža&lt;/NazivUsluge&gt;
-      &lt;MaloprodajnaCijena&gt;40.00&lt;/MaloprodajnaCijena&gt;
-      &lt;PosebniOblikProdaje&gt;ne&lt;/PosebniOblikProdaje&gt;
-      &lt;NazivPosebnogOblikaProdaje&gt;&lt;/NazivPosebnogOblikaProdaje&gt;
-      &lt;SidrenaCijena datum="2026-09-10"&gt;40.00&lt;/SidrenaCijena&gt;
-    &lt;/Usluga&gt;
-  &lt;/Usluge&gt;
-&lt;/Cjenik&gt;</pre>
+<h2>6.4 Struktura CSV datoteke</h2>
+<p>Svaka datoteka sadrži jednu vrstu: cjenik robe ili cjenik usluga. Kodiranje je UTF-8 (zadano s oznakom BOM za Excel), razdjelnik „;”, decimalni separator točka; iznosi su s dvije decimale i s PDV-om. Prvi redak je zaglavlje. Polja s razmacima ili znakom „;” stavljaju se u navodnike.</p>
+<p><strong>Cjenik robe:</strong></p>
+<pre>naziv;sifra;marka;neto_kolicina;jedinica_mjere;maloprodajna_cijena;posebni_oblik_prodaje;cijena_za_jedinicu_mjere;barkod;ean_barkod;bazna_cijena
+"Maslinovo ulje ekstra djevičansko 0,5 l";ABC-001;"Uljara Adria";0.5;l;12.99;da;25.98;;3850123456789;14.99</pre>
+<p><strong>Cjenik usluga:</strong></p>
+<pre>naziv;maloprodajna_cijena;posebni_oblik_prodaje;bazna_cijena
+Montaža;40.00;ne;40.00</pre>
 <table>
-  <tr><th style="width:30%">Element</th><th>Izvor podatka</th></tr>
-  <tr><td>Naziv / NazivUsluge</td><td>Naziv proizvoda (za varijacije naziv s atributima).</td></tr>
-  <tr><td>Sifra</td><td>SKU; ako je prazan, ID proizvoda.</td></tr>
-  <tr><td>Marka</td><td>WooCommerce marke (Brands, WC 9.6+); više maraka odvojeno zarezom.</td></tr>
-  <tr><td>JedinicaMjere, CijenaZaJedinicuMjere</td><td>Polja „Jedinica mjere” i „Neto količina” na proizvodu; cijena za jedinicu = maloprodajna cijena / neto količina.</td></tr>
-  <tr><td>MaloprodajnaCijena</td><td>Trenutna (aktivna) cijena – akcijska dok traje akcija.</td></tr>
-  <tr><td>PosebniOblikProdaje, NazivPosebnogOblikaProdaje</td><td>„da” i naziv dok je proizvod na akciji; inače „ne” i prazno.</td></tr>
-  <tr><td>SidrenaCijena (atribut datum)</td><td>Sidrena cijena i njezin referentni datum. Prazan element ako proizvod nema sidrenu cijenu ili je označen „nema referentne cijene”.</td></tr>
-  <tr><td>BaznaCijena</td><td>Samo kad je bazna cijena uključena.</td></tr>
-  <tr><td>NajnizaCijena30Dana</td><td>Samo za proizvode na sniženju s izračunatom najnižom cijenom.</td></tr>
-  <tr><td>Barkod</td><td>WooCommerce GTIN/EAN polje (WC 9.2+) ili polja poznatih dodataka (_ean, _gtin, _barcode …).</td></tr>
-  <tr><td>Dostupnost</td><td>„dostupno” za na zalihi i po narudžbi; „nedostupno” za nema na zalihi.</td></tr>
+  <tr><th style="width:30%">Stupac</th><th>Izvor podatka</th></tr>
+  <tr><td>naziv</td><td>Naziv proizvoda ili usluge (za varijacije naziv s atributima).</td></tr>
+  <tr><td>sifra</td><td>SKU; ako je prazan, ID proizvoda.</td></tr>
+  <tr><td>marka</td><td>WooCommerce marke (Brands, WC 9.6+); više maraka odvojeno zarezom.</td></tr>
+  <tr><td>neto_kolicina, jedinica_mjere</td><td>Polja „Neto količina u jedinici mjere” i „Jedinica mjere” na proizvodu (5.2).</td></tr>
+  <tr><td>maloprodajna_cijena</td><td>Trenutna (aktivna) cijena s PDV-om – akcijska dok traje akcija.</td></tr>
+  <tr><td>posebni_oblik_prodaje</td><td>„da” dok je proizvod na akciji, inače „ne”.</td></tr>
+  <tr><td>cijena_za_jedinicu_mjere</td><td>Maloprodajna cijena / neto količina; prazno ako neto količina nije upisana.</td></tr>
+  <tr><td>barkod, ean_barkod</td><td>WooCommerce GTIN/EAN polje (WC 9.2+) ili polja poznatih dodataka (_ean, _gtin, _barcode …). Broj od 8 ili 12–14 znamenki upisuje se kao EAN barkod, svaka druga vrijednost kao barkod.</td></tr>
+  <tr><td>bazna_cijena</td><td>Sidrena cijena (redovna cijena na 10. 9. 2026. ili cijena prve ponude) s PDV-om. Prazno ako proizvod nema sidrenu cijenu ili je označen „nema referentne cijene”. Druga vrsta referentne cijene (3.2) ne ulazi u cjenik.</td></tr>
 </table>
+<p>Dostupnost, adresa proizvoda i najniža cijena u 30 dana nisu stupci cjenika. Proizvodi kojih nema na zalihi ulaze u cjenik prema postavci „Uključi proizvode kojih nema na zalihi”. Zaglavlje i retke mogu mijenjati filtri <code>scwc_price_list_csv_header</code> i <code>scwc_price_list_csv_row</code> (12.4).</p>
 
-<h2>6.5 Struktura CSV datoteke</h2>
-<p>Proizvodi i usluge su u istoj datoteci; prvi stupac <code>vrsta</code> razlikuje <code>proizvod</code> i <code>usluga</code>. Razdjelnik i BOM prema postavkama (zadano „;” i BOM). Zaglavlje (kad je uključena samo sidrena cijena):</p>
-<pre>vrsta;naziv;šifra;marka;jedinica_mjere;cijena_za_jedinicu_mjere;maloprodajna_cijena;posebni_oblik_prodaje;naziv_posebnog_oblika_prodaje;sidrena_cijena;sidrena_cijena_datum;najniža_cijena_30_dana;barkod;dostupnost;url
-proizvod;Maslinovo ulje ekstra djevičansko 0,5 l;ABC-001;Uljara Adria;l;25.98;12.99;da;Sniženje;14.99;2026-09-10;12.49;3850123456789;dostupno;https://vasa-trgovina.hr/proizvod/maslinovo-ulje/
-usluga;Montaža;;;;;40.00;ne;;40.00;2026-09-10;;;;</pre>
-<p>Kod uključene bazne cijene iza <code>sidrena_cijena_datum</code> dolaze stupci <code>bazna_cijena</code> i <code>bazna_cijena_datum</code>. Redci usluga imaju prazne stupce koji se na usluge ne odnose (šifra, marka, jedinica mjere, barkod, dostupnost, url).</p>
+<h2>6.5 Arhiva (15 dana od zamjene)</h2>
+<p>Svaka objava stvara novu datoteku; stare se ne prepisuju. Kad se za neki prodajni objekt objavi novi cjenik robe ili usluga, prethodni postaje <em>zamijenjen</em> i ostaje dostupan još onoliko dana koliko je upisano u postavci „Čuvanje arhivskih cjenika” (najmanje 15, zadano 15); zatim se automatski briše. Važeći cjenik svakog objekta i vrste nikad se ne briše, koliko god bio star. Datoteke iz verzije 1.x (XML i zajednički CSV) smatraju se zamijenjenima prvom objavom nove verzije za taj objekt. Datoteke uklonjenog prodajnog objekta brišu se kad od njihove objave prođe isti broj dana. Sve čuvane datoteke vidljive su na <span class="url">/cjenik/</span> i u index.json te ostaju i nakon deaktivacije dodatka.</p>
+<p>Nova datoteka objavljuje se samo kad se cjenik promijeni, pa u danima bez promjena arhiva ne raste.</p>
 
-<h2>6.6 Arhiva od 30 dana</h2>
-<p>Svako generiranje stvara nove datoteke; stare se ne prepisuju. Datoteke starije od broja dana u postavci „Čuvanje starih cjenika” (najmanje 30, zadano 35) brišu se automatski nakon generiranja, osim najnovije datoteke svakog objekta i formata. Sve čuvane datoteke vidljive su na <span class="url">/cjenik/</span> i u index.json. Datoteke ostaju i nakon deaktivacije dodatka.</p>
-
-<h2>6.7 Što vidi inspektor ili robot za usporedbu cijena</h2>
+<h2>6.6 Što vidi inspektor ili robot za usporedbu cijena</h2>
 <ul>
-  <li>Otvori <span class="url">https://vasa-trgovina.hr/cjenik/</span>: čitljivu stranicu s podacima trgovca i prodajnih objekata te popisom svih verzija cjenika unatrag 30+ dana, s datumom i vremenom svake.</li>
-  <li>Preuzme <span class="url">/cjenik/latest.xml</span> bez prijave i bez CAPTCHA-e; u zaglavlju odgovora vidi pravi naziv datoteke s datumom i vremenom, a u datoteci sva propisana polja.</li>
+  <li>Otvori <span class="url">https://vasa-trgovina.hr/cjenik/</span>: čitljivu stranicu s podacima trgovca i prodajnih objekata, poveznicama na važeće cjenike te popisom svih čuvanih verzija s datumom i vremenom objave.</li>
+  <li>Preuzme <span class="url">/cjenik/latest_roba.csv</span> i <span class="url">/cjenik/latest_usluge.csv</span> bez prijave i bez CAPTCHA-e; u zaglavlju odgovora vidi pravi naziv datoteke, a u datoteci propisane stupce.</li>
   <li>Robot može pročitati <span class="url">/cjenik/index.json</span> i automatski preuzeti sve datoteke, uključujući izravne adrese i SHA-256 sažetke za provjeru cjelovitosti.</li>
-  <li>Za svaki prodajni objekt vidi zasebnu datoteku s vlastitim nazivom.</li>
+  <li>Za svaki prodajni objekt vidi zasebne cjenike s vlastitim nazivom (ili jedan cjenik za sva prodajna mjesta).</li>
 </ul>
 </div>
 
 <!-- ===================================================== 7 -->
 <div class="chapter" id="ch7">
-<h1>7. Automatika: generiranje, zakazivanje, cron, cache</h1>
+<h1>7. Automatika: objava, zakazivanje, cron, cache</h1>
 
-<h2>7.1 Dnevno generiranje u 06:00</h2>
-<p>Cjenik robe mora biti objavljen svaki dan do 08:00. Dodatak zato zakazuje dnevno generiranje u <strong>06:00</strong> po vremenskoj zoni trgovine (Postavke → Općenito → Vremenska zona). Dva sata ostavljaju rezervu, ali sama satnica ne jamči dovršetak: potreban je aktivan cron i provjera objavljenih datoteka. Ako vrijeme pomaknete iza 07:30, administracija upozorava. Nakon svakog izvršenja zadatak se sam zakazuje za sljedeći dan; dodatak jednom na sat provjerava postoje li svi zadaci i po potrebi ih obnavlja.</p>
+<h2>7.1 Dnevna provjera u 06:00</h2>
+<p>Jednom dnevno, zadano u <strong>06:00</strong> po vremenskoj zoni trgovine (Postavke → Općenito → Vremenska zona), dodatak ponovno čita cijeli katalog i izrađuje cjenike robe i usluga za sve prodajne objekte. Novu datoteku objavljuje samo ako se sadržaj razlikuje od važećeg cjenika ili su se promijenili podaci prodajnog objekta; inače ostaje važeći cjenik, a u okviru „Stanje cjenika” osvježava se samo vrijeme provjere. Dnevna provjera hvata i promjene koje nisu prošle kroz spremanje proizvoda u WooCommerceu. Katalog se čita u dijelovima od 100 proizvoda; napredak se sprema na disk, pa se prekinuta provjera nastavlja gdje je stala. Ako vrijeme pomaknete iza 10:30, administracija upozorava. Nakon svakog izvršenja zadatak se sam zakazuje za sljedeći dan; dodatak jednom na sat provjerava postoje li svi zadaci i po potrebi ih obnavlja.</p>
 
-<h2>7.2 Osvježavanje pri promjeni cijene</h2>
-<p>Za katalog robe preporuka je <strong>„Nikad (samo dnevno)”</strong>: jedan dnevni cjenik, bez dodatnih izvoza zbog spremanja proizvoda, uvoza ili brisanja. Nakon spremanja kliknite <strong>„Ponovno zakaži zadatke”</strong> da uklonite ranije zakazane dodatne izvoze. Bilježenje povijesti i prva sidrena cijena ostaju uključeni. U postojećem zadanom načinu („Svi proizvodi”) svaka promjena cijene bilo kojeg proizvoda, brisanje proizvoda, dovršeno snimanje i dovršen uvoz zakazuju novo generiranje nakon <strong>10 minuta</strong> odgode (postavka „Odgoda regeneriranja”). Više promjena u tom razdoblju spaja se u jedno generiranje. Posebno pravilo: ako promjena nastane <strong>prije 08:00</strong>, a odgoda bi generiranje gurnula iza 07:55, generiranje se pokreće <strong>odmah</strong> – time se smanjuje rizik kašnjenja; dovršetak ovisi o redu zadataka i raspoloživim resursima. Promjene otkrivene noćnom provjerom cijena (00:30) također pokreću osvježavanje.</p>
+<h2>7.2 Objava pri promjeni proizvoda</h2>
+<p>U zadanom načinu <strong>„Pri promjeni (preporučeno)”</strong> svako spremanje proizvoda ili varijacije (cijena, naziv, šifra, status objave …) označava taj proizvod. Nakon odgode (postavka „Odgoda regeneriranja”, zadano <strong>10 minuta</strong>) dodatak ponovno izrađuje samo retke označenih proizvoda, umeće ih u retke spremljene pri zadnjoj punoj izradi i objavljuje novi cjenik ako se nešto promijenilo. Više promjena unutar odgode spaja se u jednu objavu. Promjene cijena koje noćna provjera cijena (00:30) otkrije izvan WooCommercea (ERP, SQL) također označavaju proizvode.</p>
+<ul>
+  <li><strong>Rok 11:00:</strong> ako bi odgoda promjenu napravljenu prije 11:00 gurnula iza 10:55, objava se pokreće odmah. Dovršetak i dalje ovisi o redu zadataka i cronu (7.3, 7.4).</li>
+  <li><strong>Veće izmjene</strong> (npr. uvoz cijena iz ERP-a) obrađuju se u dijelovima od 200 proizvoda i objavljuju jednom, na kraju. Između 10:45 i 11:00 objavljuje se nakon svakog dijela, da dovršene cijene ne čekaju rok. Kad je označeno više od 2000 proizvoda, ponovno se izrađuje cijeli katalog.</li>
+  <li><strong>Skupne promjene</strong> – dovršeno snimanje referentnih cijena, dovršen CSV uvoz, spremanje postavki dodatka i trajno brisanje proizvoda – ponovno izrađuju cijeli katalog nakon iste odgode.</li>
+  <li><strong>Zaliha:</strong> promjena same količine na zalihi (npr. nakon narudžbe) ne pokreće objavu, jer cjenik ne sadrži zalihu. Iznimka: ako ste isključili „Uključi proizvode kojih nema na zalihi”, rasprodani proizvod mora nestati iz cjenika, pa i promjena zalihe pokreće objavu.</li>
+</ul>
+<p>U načinu <strong>„Samo dnevna provjera”</strong> spremanje proizvoda ne pokreće objavu; promjene ulaze u cjenik pri sljedećoj dnevnoj provjeri. Taj način koristite samo ako cijene mijenjate isključivo prije dnevne provjere (npr. noćnim uvozom).</p>
+<div class="box-tip"><strong>Mnogo malih promjena tijekom dana?</strong> Svaka objava stvara novu datoteku koja se čuva 15 dana nakon zamjene. Ako se cijene mijenjaju stalno (npr. sinkronizacija svakih 15 minuta), povećajte „Odgodu regeneriranja” na 1800–3600 sekundi: datoteka je manje, a promjene prije 11:00 i dalje se objavljuju najkasnije u 10:55.</div>
 
 <h2>7.3 Action Scheduler ili WP-Cron</h2>
-<p>Dodatak koristi <strong>Action Scheduler</strong> (dolazi uz WooCommerce) ako je dostupan; inače <strong>WP-Cron</strong>. Koji je aktivan vidite u okviru „Stanje cjenika”. Oba mehanizma ovise o tome da netko posjeti stranicu ili da ih pokreće sistemski cron. Na stranici s malo noćnog prometa generiranje u 06:00 može kasniti – zato preporučujemo sistemski cron.</p>
+<p>Dodatak koristi <strong>Action Scheduler</strong> (dolazi uz WooCommerce) ako je dostupan; inače <strong>WP-Cron</strong>. Koji je aktivan vidite u okviru „Stanje cjenika”. Oba mehanizma ovise o tome da netko posjeti stranicu ili da ih pokreće sistemski cron. Na stranici s malo prometa i dnevna provjera i objava promjena mogu kasniti – zato preporučujemo sistemski cron.</p>
 
 <h2>7.4 Preporučeni sistemski cron</h2>
 <ol>
@@ -680,9 +653,9 @@ usluga;Montaža;;;;;40.00;ne;;40.00;2026-09-10;;;;</pre>
 <p>Poziv vraća HTTP 202 i <code>{"ok":true,"queued":true}</code> kad je generiranje zakazano. To još nije potvrda objave: Action Scheduler ili WP-Cron mora izvršiti radnje. Proizvodi i varijacije obrađuju se u manjim koracima; napredak se sprema između koraka. Posljednji dovršeni cjenik ostaje dostupan do objave svih novih datoteka. Pogrešan ključ vraća HTTP 403. Datotečna brava sprečava istodobno pisanje i oslobađa se završetkom procesa.</p>
 
 <h2>7.6 Cache dodaci i CDN</h2>
-<div class="box-important"><strong>Ne keširajte /cjenik/</strong> Adrese <span class="url">/cjenik/</span>, <span class="url">/cjenik/latest.xml</span>, <span class="url">/cjenik/latest.csv</span> i <span class="url">/cjenik/index.json</span> moraju uvijek vratiti svježi sadržaj. Dodatak šalje zaglavlja <code>Cache-Control: no-cache, no-store</code> i definira konstantu <code>DONOTCACHEPAGE</code>, što većina cache dodataka poštuje. Ipak, u cache dodatku (WP Rocket, LiteSpeed Cache, W3 Total Cache …) i na CDN-u (Cloudflare i sl.) dodajte <code>/cjenik/*</code> u iznimke od keširanja.</div>
+<div class="box-important"><strong>Ne keširajte /cjenik/</strong> Adrese <span class="url">/cjenik/</span>, <span class="url">/cjenik/latest_roba.csv</span>, <span class="url">/cjenik/latest_usluge.csv</span> i <span class="url">/cjenik/index.json</span> moraju uvijek vratiti svježi sadržaj. Dodatak šalje zaglavlja <code>Cache-Control: no-cache, no-store</code> i definira konstantu <code>DONOTCACHEPAGE</code>, što većina cache dodataka poštuje. Ipak, u cache dodatku (WP Rocket, LiteSpeed Cache, W3 Total Cache …) i na CDN-u (Cloudflare i sl.) dodajte <code>/cjenik/*</code> u iznimke od keširanja.</div>
 <ul>
-  <li><strong>Bez zaštite od robota:</strong> na <span class="url">/cjenik/*</span> ne smije biti CAPTCHA, „Bot Fight Mode”, ograničenje broja zahtjeva ni provjera preglednika (Cloudflare „Under Attack”, sigurnosni dodaci). Odluka traži da automatizirani alati mogu dohvatiti cijene.</li>
+  <li><strong>Bez zaštite od robota:</strong> na <span class="url">/cjenik/*</span> ne smije biti CAPTCHA, „Bot Fight Mode”, ograničenje broja zahtjeva ni provjera preglednika (Cloudflare „Under Attack”, sigurnosni dodaci). Cjenik moraju moći dohvatiti i automatizirani alati.</li>
   <li><strong>Bez prijave:</strong> stranica u izgradnji („coming soon”, „maintenance”) ili zaštita lozinkom ne smije obuhvaćati <span class="url">/cjenik/</span>.</li>
   <li>Arhivirane datoteke po punom nazivu smiju se keširati (dodatak to i sam dopušta na 24 sata) jer se njihov sadržaj ne mijenja.</li>
 </ul>
@@ -739,10 +712,11 @@ Cijena na dan 10. 9. 2026.: 15,99 €</pre>
 <h2>9.1 Podaci i postavke</h2>
 <ul class="checklist">
   <li>Dodatak je aktivan, PHP 8.1+, WooCommerce 9.0+ (poželjno 9.6+ zbog marki i barkoda).</li>
-  <li>Prodajni objekti: upisana adresa sjedišta, oznaka prodajnog objekta i broj skladišta; naziv trgovca odgovara službenom nazivu.</li>
-  <li>Sve fizičke poslovnice dodane kao dodatni prodajni objekti (svaka ima vlastitu datoteku).</li>
+  <li>Prodajni objekti: upisana adresa sjedišta i oznaka prodajnog objekta; naziv trgovca odgovara službenom nazivu.</li>
+  <li>Kartica Cjenik: upisan OIB (pravna osoba) ili matični broj (fizička osoba).</li>
+  <li>Sve fizičke poslovnice dodane kao dodatni prodajni objekti (svaka ima vlastiti cjenik) ili je uključen „Isti cjenik za sva prodajna mjesta”.</li>
   <li>Referentni datum sidrene cijene je 10. 9. 2026.; FMCG iznimka (2. 5. 2025.) dodana samo ako ste je stvarno primjenjivali.</li>
-  <li>Vremenska zona WordPressa je „Zagreb” (Postavke → Općenito), da bi 06:00 bilo lokalno vrijeme.</li>
+  <li>Vremenska zona WordPressa je „Zagreb” (Postavke → Općenito), da bi 06:00 i rok 11:00 bili lokalno vrijeme.</li>
 </ul>
 
 <h2>9.2 Sidrene cijene</h2>
@@ -764,15 +738,16 @@ Cijena na dan 10. 9. 2026.: 15,99 €</pre>
 
 <h2>9.4 Cjenik</h2>
 <ul class="checklist">
-  <li><span class="url">https://vasa-trgovina.hr/cjenik/</span> otvara se bez prijave i prikazuje datoteke; <span class="url">/cjenik/latest.xml</span> i <span class="url">/cjenik/latest.csv</span> preuzimaju se.</li>
-  <li>Naziv datoteke sadrži oblik, adresu, oznaku, broj pohrane, datum i vrijeme.</li>
-  <li>Datoteka sadrži sva propisana polja; usluge su u odjeljku „Usluge” (provjerite pravilo „Što je usluga”).</li>
+  <li><span class="url">https://vasa-trgovina.hr/cjenik/</span> otvara se bez prijave i prikazuje datoteke; <span class="url">/cjenik/latest_roba.csv</span> (i, ako prodajete usluge, <span class="url">/cjenik/latest_usluge.csv</span>) preuzima se.</li>
+  <li>Naziv datoteke počinje OIB-om / matičnim brojem i sadrži prodajni objekt (ili ZA_SVA_PRODAJNA_MJESTA), ROBA ili USLUGE, broj pohrane, datum i vrijeme.</li>
+  <li>Datoteka sadrži propisane stupce; usluge su u zasebnom cjeniku usluga (provjerite pravilo „Što je usluga”).</li>
   <li>Jedinica mjere i neto količina upisane barem za proizvode koji se prodaju po težini/volumenu.</li>
   <li>Proizvodi s praznom cijenom označeni „Cijena na upit”.</li>
+  <li>„Objava pri promjeni proizvoda” je „Pri promjeni (preporučeno)”: nakon promjene cijene novi cjenik pojavi se za desetak minuta.</li>
   <li>Okvir „Stanje cjenika” pokazuje sljedeće generiranje (06:00) i sljedeću provjeru cijena (00:30), oboje zakazano.</li>
-  <li>Red zadataka redovito se izvršava putem sistemskog crona ili WP-Crona; vanjski URL samo zakazuje izvoz. Nakon prve noći provjerite vrijeme dovršene objave.</li>
+  <li>Red zadataka redovito se izvršava putem sistemskog crona ili WP-Crona; vanjski URL samo zakazuje izvoz. Nakon prve promjene cijene provjerite vrijeme objave novog cjenika.</li>
   <li>Cache dodatak i CDN ne keširaju <span class="url">/cjenik/*</span>; nema CAPTCHA-e ni zaštite od robota na toj adresi.</li>
-  <li>Čuvanje starih cjenika ≥ 30 dana; opcija brisanja podataka pri deinstalaciji isključena.</li>
+  <li>Čuvanje arhivskih cjenika ≥ 15 dana; opcija brisanja podataka pri deinstalaciji isključena.</li>
 </ul>
 
 <h2>9.5 Evidencija (dokazi)</h2>
@@ -796,29 +771,32 @@ Cijena na dan 10. 9. 2026.: 15,99 €</pre>
   <li>Provjerite postavku <strong>Putanja (slug)</strong> u kartici Cjenik – možda je promijenjena. Provjerite i da je uključeno „Objavi strojno čitljiv cjenik”.</li>
   <li>Otvorite <strong>Postavke → Trajne veze</strong> i kliknite „Spremi promjene” bez mijenjanja – to osvježava pravila adresa.</li>
   <li>U kartici Cjenik kliknite <strong>„Ponovno zakaži zadatke”</strong> i zatim „Generiraj sada”.</li>
-  <li>Ako su trajne veze postavljene na „Obične” (adrese oblika <span class="url">?p=123</span>), lijepe adrese ne rade; koristite oblik s parametrima: <span class="url">https://vasa-trgovina.hr/?scwc_cjenik=latest&amp;scwc_format=xml</span> (odnosno <code>scwc_format=csv</code>, <code>scwc_cjenik=index</code> za popis, <code>scwc_cjenik=json</code> za index.json, dodatno <code>&amp;scwc_outlet=oznaka</code> za pojedini objekt). Preporučujemo ipak uključiti lijepe trajne veze (npr. „Naziv objave”).</li>
+  <li>Ako su trajne veze postavljene na „Obične” (adrese oblika <span class="url">?p=123</span>), lijepe adrese ne rade; koristite oblik s parametrima: <span class="url">https://vasa-trgovina.hr/?scwc_cjenik=latest&amp;scwc_kind=roba&amp;scwc_format=csv</span> (odnosno <code>scwc_kind=usluge</code> za cjenik usluga, <code>scwc_cjenik=index</code> za popis, <code>scwc_cjenik=json</code> za index.json, dodatno <code>&amp;scwc_outlet=oznaka</code> za pojedini objekt). Preporučujemo ipak uključiti lijepe trajne veze (npr. „Naziv objave”).</li>
   <li>Izravne adrese datoteka <span class="url">/wp-content/uploads/scwc-cjenik/…</span> rade uvijek, neovisno o trajnim vezama.</li>
 </ol>
 
-<h2>10.2 „Cjenik nije osvježen”</h2>
-<p>Obavijest „cjenik nije osvježen od …” pojavljuje se kad je od zadnjeg generiranja prošlo više od 26 sati. Uzrok je gotovo uvijek neizvršavanje zakazanih zadataka:</p>
+<h2>10.2 „Cjenik nije provjeren” ili „novi cjenik se ne pojavljuje”</h2>
+<p>Obavijest „cjenik nije provjeren od …” pojavljuje se kad je od zadnje provjere cjenika prošlo više od 26 sati. Datum zadnje <em>objave</em> smije biti stariji – to je u redu ako se cijene i ponuda nisu mijenjale. Uzrok obavijesti je gotovo uvijek neizvršavanje zakazanih zadataka:</p>
 <ol>
   <li>U okviru „Stanje cjenika” provjerite „Sljedeće generiranje”. Ako piše „nije zakazano”, kliknite „Ponovno zakaži zadatke”.</li>
-  <li>Kliknite „Generiraj sada” – potvrda znači da je izvoz zakazan, a ne dovršen. Pratite datum objavljenog cjenika i zakazane radnje; ako ostaju na čekanju, provjerite sistemski cron iz poglavlja 7.4. Sam vanjski poziv s ključem ne obrađuje red zadataka.</li>
+  <li>Kliknite „Generiraj sada” – potvrda znači da je izrada zakazana, a ne dovršena. Pratite vrijeme zadnje provjere i zakazane radnje; ako ostaju na čekanju, provjerite sistemski cron iz poglavlja 7.4. Sam vanjski poziv s ključem ne obrađuje red zadataka.</li>
   <li>Ako je u „Zadnje generiranje” crvena poruka, v. 10.3.</li>
-  <li>Provjerite WooCommerce → Status → Zakazane radnje (Action Scheduler) ima li radnji <code>scwc_generate_price_list</code> u stanju „Na čekanju” i ima li neuspjelih.</li>
+  <li>Provjerite WooCommerce → Status → Zakazane radnje (Action Scheduler) ima li radnji <code>scwc_generate_price_list</code> i <code>scwc_generate_price_list_batch</code> u stanju „Na čekanju” i ima li neuspjelih.</li>
 </ol>
+<p>Ako ste promijenili proizvod, a novi cjenik se ne pojavljuje: provjerite da je „Objava pri promjeni proizvoda” postavljena na „Pri promjeni (preporučeno)” i da je prošla odgoda (zadano 10 minuta). Ako se sadržaj cjenika nije promijenio (npr. promijenjen je samo opis proizvoda ili količina na zalihi), nova datoteka se ne objavljuje.</p>
 
 <h2>10.3 Obavijesti u administraciji i što napraviti</h2>
 <table>
   <tr><th style="width:46%">Obavijest</th><th>Značenje i rješenje</th></tr>
   <tr><td>„cjenik se ne može generirati dok ne unesete adresu i oznaku prodajnog objekta. Otvorite postavke.”</td><td>Kartica Prodajni objekti: upišite adresu i oznaku i spremite.</td></tr>
-  <tr><td>„dnevno generiranje cjenika nije zakazano. Otvorite postavke cjenika i kliknite ‚Ponovno zakaži’.”</td><td>Kartica Cjenik → gumb „Ponovno zakaži zadatke”. Ako se ponavlja, Action Scheduler/WP-Cron ne radi – postavite sistemski cron.</td></tr>
+  <tr><td>„novi cjenik ne objavljuje se dok ne unesete OIB / matični broj trgovca (dio naziva datoteke, NN 132/2026). Otvorite postavke.”</td><td>Kartica Cjenik: upišite OIB (pravna osoba) ili matični broj (fizička osoba) i spremite. Do tada javne adrese poslužuju zadnji objavljeni cjenik. Obavijest se ne može sakriti.</td></tr>
+  <tr><td>„dnevno generiranje cjenika nije zakazano. Otvorite postavke cjenika i kliknite ‚Ponovno zakaži zadatke’.”</td><td>Kartica Cjenik → gumb „Ponovno zakaži zadatke”. Ako se ponavlja, Action Scheduler/WP-Cron ne radi – postavite sistemski cron.</td></tr>
   <tr><td>„cjenik još nije generiran. Generirajte ga sada i provjerite javni URL.”</td><td>Kartica Cjenik → „Generiraj sada”, zatim otvorite <span class="url">/cjenik/</span>.</td></tr>
-  <tr><td>„zadnje generiranje cjenika nije uspjelo: …”</td><td>Pročitajte poruku: „Podaci o prodajnom objektu nisu potpuni” → upišite adresu/oznaku; „Nije moguće stvoriti mapu …” ili „Nije moguće pisati u datoteku …” → mapa <code>wp-content/uploads/scwc-cjenik/</code> nema dozvolu pisanja (obratite se hostingu); „Generiranje je već u tijeku” → pričekajte dovršetak aktivne radnje i pokušajte ponovno; „Cjenik je isključen u postavkama” → uključite „Objavi strojno čitljiv cjenik”.</td></tr>
-  <tr><td>„cjenik nije osvježen od … (obveza: svaki dan do 08:00). Provjerite WP-Cron / Action Scheduler.”</td><td>V. 10.2.</td></tr>
-  <tr><td>„dnevno generiranje cjenika zakazano je u HH:MM, a cjenik robe mora biti objavljen svaki dan do 08:00 (NN 101/2026). Pomaknite vrijeme na najkasnije 07:30.”</td><td>Kartica Cjenik → „Vrijeme dnevnog generiranja” postavite na 06:00.</td></tr>
-  <tr><td>„trajne veze su ‚obične’ pa je cjenik dostupan samo na adresi s parametrima (?scwc_cjenik=latest&amp;scwc_format=xml). Preporučujemo uključiti lijepe trajne veze.”</td><td>Postavke → Trajne veze → odaberite npr. „Naziv objave” i spremite.</td></tr>
+  <tr><td>„zadnje generiranje cjenika nije uspjelo: …”</td><td>Pročitajte poruku: „Unesite OIB / matični broj trgovca (Sidrena cijena → Cjenik).” → u kartici Cjenik upišite OIB i spremite, zatim „Generiraj sada”; „Podaci o prodajnom objektu nisu potpuni” → upišite adresu/oznaku; „Nije moguće stvoriti mapu …” ili „Nije moguće pisati u datoteku …” → mapa <code>wp-content/uploads/scwc-cjenik/</code> nema dozvolu pisanja (obratite se hostingu); „Generiranje je već u tijeku” → pričekajte dovršetak aktivne radnje i pokušajte ponovno; „Cjenik je isključen u postavkama” → uključite „Objavi strojno čitljiv cjenik”.</td></tr>
+  <tr><td>„cjenik nije provjeren od … (dnevna provjera; promijenjeni cjenik mora biti objavljen do 11:00). Provjerite WP-Cron / Action Scheduler.”</td><td>V. 10.2.</td></tr>
+  <tr><td>„dnevna provjera cjenika zakazana je u HH:MM, a promijenjeni cjenik mora biti objavljen do 11:00 (NN 132/2026). Pomaknite vrijeme na najkasnije 10:30.”</td><td>Kartica Cjenik → „Vrijeme dnevne provjere” postavite na 06:00.</td></tr>
+  <tr><td>„trajne veze su ‚obične’ pa je cjenik dostupan samo na adresi s parametrima (?scwc_cjenik=latest&amp;scwc_kind=roba&amp;scwc_format=csv). Preporučujemo uključiti lijepe trajne veze.”</td><td>Postavke → Trajne veze → odaberite npr. „Naziv objave” i spremite.</td></tr>
+  <tr><td>„javna adresa cjenika bit će https://vasa-trgovina.hr/cjenik/ (npr. …/cjenik/latest_roba.csv). Adresa je /cjenik/, a ne /cijene.” (može se sakriti)</td><td>Informacija dok cjenik još nije generiran.</td></tr>
   <tr><td>„N proizvoda/varijacija nema sidrenu cijenu ni oznaku ‚nema referentne cijene’. Snimite ili uvezite cijene.” (može se sakriti)</td><td>Alati → snimanje ili uvoz; za nove proizvode označite „Nema referentne cijene”. Broj se osvježava nakon snimanja/uvoza. Izvoz s opcijom „Samo proizvodi bez referentne cijene” daje popis.</td></tr>
   <tr><td>„koristite blokovsku košaricu/blagajnu. Sidrena cijena tamo se prikazuje kao dodatni redak podataka stavke; puni prikaz oznake u blokovima stiže u sljedećoj verziji.” (može se sakriti)</td><td>Informacija; v. 8.3. Kliknite „Sakrij” ako ste svjesni ograničenja.</td></tr>
   <tr><td>„WooCommerce 9.2+ ima ugrađeno polje GTIN/EAN (barkod). Nadogradite WooCommerce kako bi cjenik sadržavao barkodove.” (može se sakriti)</td><td>Nadogradite WooCommerce ili koristite dodatak koji barkod sprema u polje <code>_ean</code>, <code>_gtin</code> ili <code>_barcode</code>.</td></tr>
@@ -871,7 +849,7 @@ Cijena na dan 10. 9. 2026.: 15,99 €</pre>
   <dd>Sidrena cijena je povijesna činjenica (cijena na 10. 9. 2026.) i ne mijenja se s vašim današnjim cijenama. Mijenjajte je samo za ispravak pogrešnog unosa.</dd>
 
   <dt>Moram li čuvati stare cjenike?</dt>
-  <dd>Da, najmanje 30 dana. Dodatak čuva i javno poslužuje verzije prema postavci zadržavanja (min. 30 dana, zadano 35) i ne briše ih pri deaktivaciji.</dd>
+  <dd>Da: zamijenjeni cjenik mora ostati dostupan najmanje 15 dana od zamjene. Dodatak ga čuva i javno poslužuje prema postavci „Čuvanje arhivskih cjenika” (min. 15, zadano 15), važeći cjenik nikad ne briše, a datoteke ne briše ni pri deaktivaciji.</dd>
 
   <dt>Kako se računa postotak popusta?</dt>
   <dd>Iz najniže cijene u 30 dana prije početka sniženja (a ne iz redovne cijene), zaokruženo na niže. Ako cijenu tijekom istog sniženja dodatno spustite, referentna najniža cijena ostaje ista.</dd>
@@ -883,22 +861,22 @@ Cijena na dan 10. 9. 2026.: 15,99 €</pre>
   <dd>Dodatak za poslovnice koristi cijene iz WooCommercea. Ako poslovnice imaju drukčije cijene, njihov cjenik morate objaviti drugim putem (npr. iz blagajničkog sustava).</dd>
 
   <dt>Prodajem usluge. Kad se cjenik usluga osvježava?</dt>
-  <dd>Pri svakoj promjeni cijene usluge, s odgodom od 10 minuta; promjena prije 08:00 objavljuje se odmah. Proizvod je usluga ako je virtualan ili ima kvačicu „Ovo je usluga” (pravilo se mijenja u kartici Cjenik).</dd>
+  <dd>Usluge imaju zaseban cjenik (<span class="url">/cjenik/latest_usluge.csv</span>) koji se objavljuje kao i cjenik robe: nakon promjene, s odgodom od 10 minuta, a promjena prije 11:00 najkasnije u 10:55. Proizvod je usluga ako je virtualan ili ima kvačicu „Ovo je usluga” (pravilo se mijenja u kartici Cjenik).</dd>
 
-  <dt>Trebam li XML i CSV?</dt>
-  <dd>Odluka dopušta jedno ili drugo. Zadano dodatak generira oba jer to ne stoji ništa, a različiti alati preferiraju različite formate.</dd>
+  <dt>Trebam li XML?</dt>
+  <dd>Ne. Pravilnik propisuje CSV, pa dodatak od verzije 2.0 izrađuje samo CSV. Stara adresa <span class="url">/cjenik/latest.xml</span> i dalje radi, ali vraća važeći CSV cjenik robe.</dd>
 
   <dt>Jesu li cijene u cjeniku s PDV-om?</dt>
-  <dd>Da, zadano su maloprodajne (s PDV-om). Postavka „Cijene u cjeniku” dopušta i bez PDV-a, ali to ne preporučujemo.</dd>
+  <dd>Da. Cjenik uvijek sadrži maloprodajne cijene s PDV-om.</dd>
 
-  <dt>Što ako mi web stranica padne u 06:00?</dt>
-  <dd>Zadatak se izvršava čim se stranica i cron oporave; dodatak jednom na sat provjerava zakazane zadatke. Ako do 08:00 cjenik nije generiran, kliknite „Generiraj sada”. Vanjski cron s ključem (7.5) je dobra dodatna sigurnost.</dd>
+  <dt>Što ako mi web stranica padne?</dt>
+  <dd>Zadatak se izvršava čim se stranica i cron oporave; dodatak jednom na sat provjerava zakazane zadatke. Ako ste mijenjali cijene, a do 11:00 novi cjenik nije objavljen, kliknite „Generiraj sada”. Vanjski cron s ključem (7.5) je dobra dodatna sigurnost.</dd>
 
-  <dt>Vidi li se sidrena cijena u e-mailovima kupcima?</dt>
+<dt>Vidi li se sidrena cijena u e-mailovima kupcima?</dt>
   <dd>Ne, namjerno – e-mailovi i stranica nakon narudžbe nisu mjesta gdje se cijena „ističe” u smislu Odluke.</dd>
 
-  <dt>Što se događa 17. 11. 2026.?</dt>
-  <dd>Počinje obveza „bazne cijene”. Kad ministarstvo objavi pravilnik s referentnim danom, u kartici Referentne cijene uključite „Bazna cijena”, upišite datum i snimite/uvezite cijene alatom (vrsta „Bazna cijena na dan”). Cjenik i prikaz automatski dobivaju drugu oznaku.</dd>
+  <dt>Što je s „baznom cijenom”?</dt>
+  <dd>Prema Pravilniku o isticanju bazne cijene (NN 132/2026) bazna cijena je redovna cijena na dan 10. 9. 2026., odnosno cijena prve ponude za kasnije uvedene proizvode – dakle cijena koju dodatak već vodi kao sidrenu cijenu. U cjeniku je u stupcu <code>bazna_cijena</code>. Drugu vrstu „Bazna cijena” u kartici Referentne cijene za cjenik nije potrebno uključivati; ona ne ulazi u cjenik.</dd>
 
   <dt>Mogu li dodatak deaktivirati na neko vrijeme?</dt>
   <dd>Možete, ali tada se ne prikazuje sidrena cijena, ne generira cjenik i ne bilježi povijest cijena – što znači neusklađenost za to razdoblje. Podaci i datoteke ostaju sačuvani.</dd>
@@ -912,7 +890,7 @@ Cijena na dan 10. 9. 2026.: 15,99 €</pre>
 <h2>12.1 WP-CLI naredbe</h2>
 <table>
   <tr><th style="width:46%">Naredba</th><th>Opis</th></tr>
-  <tr><td><code>wp scwc export [--reason=&lt;tekst&gt;]</code></td><td>Generira cjenik (XML/CSV) za sve prodajne objekte sada; ispisuje nazive datoteka i brojeve.</td></tr>
+  <tr><td><code>wp scwc export [--reason=&lt;tekst&gt;]</code></td><td>Izrađuje cjenike (CSV robe i usluga) za sve prodajne objekte sada i objavlja one koji su se promijenili; ispisuje nazive objavljenih datoteka i brojeve redaka.</td></tr>
   <tr><td><code>wp scwc snapshot [--key=anchor|base] [--date=GGGG-MM-DD] [--overwrite] [--skip-on-sale] [--dry-run]</code></td><td>Snimi trenutne redovne cijene kao referentne (isto kao alat 4.1). Bez <code>--overwrite</code> radi u načinu „samo nedostajuće”.</td></tr>
   <tr><td><code>wp scwc import &lt;datoteka.csv&gt; [--key=anchor|base] [--dry-run]</code></td><td>Uvoz referentnih cijena iz CSV-a (format iz 4.2). <code>--dry-run</code> samo provjerava.</td></tr>
   <tr><td><code>wp scwc sweep</code></td><td>Provjeri i zabilježi trenutne cijene svih proizvoda (povijest cijena).</td></tr>
@@ -942,8 +920,10 @@ $pct  = scwc_discount_percent( $product );              // int|null</pre>
   <tr><td><code>scwc_reference_date</code></td><td>Nadjačavanje referentnog datuma po proizvodu.</td></tr>
   <tr><td><code>scwc_should_render_badge</code></td><td>Uključivanje/isključivanje oznake za proizvod u kontekstu (loop, single, cart, mini_cart, checkout, shortcode, store_api).</td></tr>
   <tr><td><code>scwc_price_badge_html</code></td><td>Izmjena konačnog HTML-a oznake.</td></tr>
+  <tr><td><code>scwc_price_tooltip_html</code></td><td>Izmjena HTML-a prikaza „Oblačić (?) uz precrtanu cijenu”.</td></tr>
   <tr><td><code>scwc_is_service</code></td><td>Odluka je li proizvod usluga.</td></tr>
   <tr><td><code>scwc_product_brand</code></td><td>Marka proizvoda za cjenik.</td></tr>
+  <tr><td><code>scwc_product_barcode</code></td><td>Barkod proizvoda za cjenik.</td></tr>
   <tr><td><code>scwc_barcode_meta_keys</code></td><td>Popis meta ključeva iz kojih se čita barkod (zadano <code>_ean</code>, <code>_gtin</code>, <code>_barcode</code>, <code>_alg_ean</code>, <code>_wpm_gtin_code</code>, <code>hwp_product_gtin</code>).</td></tr>
   <tr><td><code>scwc_price_list_item</code></td><td>Izmjena ili izbacivanje (null) retka cjenika (<code>Item</code> / <code>ServiceItem</code>).</td></tr>
   <tr><td><code>scwc_price_list_csv_header</code>, <code>scwc_price_list_csv_row</code></td><td>Izmjena zaglavlja i redaka CSV-a.</td></tr>
@@ -951,23 +931,24 @@ $pct  = scwc_discount_percent( $product );              // int|null</pre>
 <table>
   <tr><th style="width:34%">Akcija</th><th>Kada se okida</th></tr>
   <tr><td><code>scwc_price_changed</code></td><td>Zabilježena promjena cijene (argumenti: <code>ProductSnapshot</code>, prijelaz).</td></tr>
-  <tr><td><code>scwc_price_list_generated</code></td><td>Uspješno generiranje cjenika (<code>GenerationResult</code>).</td></tr>
+  <tr><td><code>scwc_price_list_generated</code></td><td>Uspješno dovršena izrada cjenika (<code>GenerationResult</code>; popis objavljenih datoteka prazan je ako se ništa nije promijenilo).</td></tr>
+  <tr><td><code>scwc_first_offer_captured</code></td><td>Zabilježena prva redovna cijena novog proizvoda.</td></tr>
   <tr><td><code>scwc_snapshot_completed</code></td><td>Dovršeno snimanje referentnih cijena (<code>SnapshotRequest</code>).</td></tr>
   <tr><td><code>scwc_import_completed</code></td><td>Dovršen CSV uvoz (<code>ImportResult</code>).</td></tr>
 </table>
 
 <h2>12.5 Tehničke pojedinosti</h2>
 <ul>
-  <li>Meta ključevi proizvoda: <code>_scwc_ref_{tip}_price</code>, <code>_scwc_ref_{tip}_date</code>, <code>_scwc_ref_{tip}_na</code>, <code>_scwc_ref_{tip}_source</code>; <code>_scwc_is_service</code>, <code>_scwc_unit</code>, <code>_scwc_unit_quantity</code>, <code>_scwc_sale_name</code>, <code>_scwc_exclude_from_price_list</code>, <code>_scwc_price_on_request</code>; Omnibus: <code>_scwc_omnibus_ref_price</code>, <code>_scwc_omnibus_sale_start</code>, <code>_scwc_omnibus_ref_source</code>.</li>
-  <li>Postavke: jedna opcija <code>scwc_settings</code>; tablica povijesti <code>{prefix}scwc_price_history</code>; datoteke u <code>uploads/scwc-cjenik/</code> s <code>manifest.json</code>.</li>
-  <li>Zakazani zadaci: <code>scwc_generate_price_list</code>, <code>scwc_daily_sweep</code>, <code>scwc_sweep_page</code>, <code>scwc_prune</code>, <code>scwc_auto_snapshot</code>.</li>
+  <li>Meta ključevi proizvoda: <code>_scwc_ref_{tip}_price</code>, <code>_scwc_ref_{tip}_date</code>, <code>_scwc_ref_{tip}_na</code>, <code>_scwc_ref_{tip}_source</code>; <code>_scwc_is_service</code>, <code>_scwc_unit</code>, <code>_scwc_unit_quantity</code>, <code>_scwc_exclude_from_price_list</code>, <code>_scwc_price_on_request</code>; oznaka promjene za objavu: <code>_scwc_pl_changed</code>; Omnibus: <code>_scwc_omnibus_ref_price</code>, <code>_scwc_omnibus_sale_start</code>, <code>_scwc_omnibus_ref_source</code>.</li>
+  <li>Postavke: jedna opcija <code>scwc_settings</code>; tablica povijesti <code>{prefix}scwc_price_history</code>; datoteke u <code>uploads/scwc-cjenik/</code> s <code>manifest.json</code>; spremljeni retci zadnje pune izrade u <code>uploads/scwc-cjenik/tmp/</code>.</li>
+  <li>Zakazani zadaci: <code>scwc_generate_price_list</code>, <code>scwc_generate_price_list_batch</code>, <code>scwc_daily_sweep</code>, <code>scwc_sweep_page</code>, <code>scwc_prune</code>, <code>scwc_auto_snapshot</code>.</li>
   <li>Store API: podaci pod <code>extensions.sidrena-cijena</code> na stavkama košarice i proizvodima (<code>references</code>, <code>lowest_30_days</code>, <code>is_on_sale</code>).</li>
-  <li>Endpoint query varijable: <code>scwc_cjenik</code> (index|json|latest|file), <code>scwc_format</code>, <code>scwc_file</code>, <code>scwc_outlet</code>; privatno <code>scwc_run</code> + <code>key</code>.</li>
+  <li>Endpoint query varijable: <code>scwc_cjenik</code> (index|json|latest|file), <code>scwc_kind</code> (roba|usluge), <code>scwc_format</code>, <code>scwc_file</code>, <code>scwc_outlet</code>; privatno <code>scwc_run</code> + <code>key</code>.</li>
 </ul>
 
 <div class="colophon">
-  <p><strong>Sidrena cijena za WooCommerce – Priručnik za vlasnike trgovine.</strong> Verzija dodatka 1.3.0. Datum: 23. 10. 2026.</p>
-  <p>Ovaj priručnik nije pravni savjet. Propisi: Odluka o isticanju dodatne cijene i Odluka o objavi cjenika (NN 101/2026), Zakon o iznimnim mjerama kontrole cijena (NN 40/2025), Zakon o zaštiti potrošača (čl. 19). Za tumačenje propisa obratite se pravnom savjetniku.</p>
+  <p><strong>Sidrena cijena za WooCommerce – Priručnik za vlasnike trgovine.</strong> Verzija dodatka 2.0.0. Datum: 21. 11. 2026.</p>
+  <p>Ovaj priručnik nije pravni savjet. Propisi: Odluka o isticanju dodatne cijene (NN 101/2026), Pravilnik o načinu objave cjenika proizvoda i Pravilnik o isticanju bazne cijene (NN 132/2026), Zakon o iznimnim mjerama kontrole cijena (NN 40/2025), Zakon o zaštiti potrošača (čl. 19). Za tumačenje propisa obratite se pravnom savjetniku.</p>
 </div>
 </div>
 

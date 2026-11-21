@@ -116,7 +116,7 @@ final class Fields {
 					'path'        => 'outlet.form',
 					'type'        => 'text',
 					'label'       => __( 'Oblik prodajnog objekta', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Npr. webshop, prodavaonica, kiosk. Prvi dio naziva datoteke cjenika.', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Npr. webshop, prodavaonica, kiosk. Dio naziva datoteke cjenika, iza OIB-a.', 'sidrena-cijena-za-woocommerce' ),
 					'placeholder' => 'webshop',
 				],
 				[
@@ -164,8 +164,8 @@ final class Fields {
 				[
 					'path'        => 'reference_prices.auto_na_after_date',
 					'type'        => 'checkbox',
-					'label'       => __( 'Automatski "nema referentne cijene" za nove proizvode', 'sidrena-cijena-za-woocommerce' ),
-					'description' => __( 'Proizvodi kreirani nakon referentnog datuma nemaju sidrenu cijenu pa se oznaka ne prikazuje.', 'sidrena-cijena-za-woocommerce' ),
+					'label'       => __( 'Snimanje cijena preskače nove proizvode', 'sidrena-cijena-za-woocommerce' ),
+					'description' => __( 'Proizvodi kreirani nakon referentnog datuma ne dobivaju današnju cijenu pri snimanju; njihova je sidrena cijena cijena prve ponude (NN 132/2026).', 'sidrena-cijena-za-woocommerce' ),
 				],
 
 				[

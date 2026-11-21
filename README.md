@@ -12,7 +12,7 @@ Ovo je fork projekta [Kristijana Biroa](https://github.com/kbiro-nander/sidrena-
 
 ### Verzija 2.0.0: cjenik prema NN 132/2026
 
-- Samo CSV, zaseban cjenik robe i usluga, propisani stupci i naziv datoteke (OIB/MB, ROBA/USLUGE, broj pohrane, GGGGMMDD_SSMM). Obavezna nova postavka: OIB / matični broj trgovca.
+- Samo CSV, zaseban cjenik robe i usluga, propisani stupci i naziv datoteke (OIB/MB, ROBA/USLUGE, broj pohrane, GGGGMMDD_SSMM). Obavezna nova postavka: OIB / matični broj trgovca. Dok nije upisan, novi cjenik se ne objavljuje, a administracija prikazuje grešku.
 - Nova datoteka objavljuje se samo kad se cjenik promijeni; pri spremanju proizvoda ponovno se izrađuju samo njegovi redci, a cijeli katalog čita se jednom dnevno. Rok objave promjena je 11:00.
 - Zamijenjene datoteke dostupne su još 15 dana. Adrese `/cjenik/latest_roba.csv`, `/cjenik/latest_usluge.csv`; stare `latest.csv`/`latest.xml` vode na cjenik robe.
 - Snimanje cijena preskače proizvode stvorene nakon referentnog dana (bazna cijena = cijena prve ponude).
@@ -69,23 +69,19 @@ WordPress/WooCommerce dodatak koji pomaže hrvatskim webshopovima s prikazom sid
 
 - **sidrena (dodatna) cijena** uz svaku cijenu – redovna cijena koja je vrijedila 10. 9. 2026. (za ranije obuhvaćene FMCG proizvode ostaje 2. 5. 2025.),
 - **najniža cijena u 30 dana prije sniženja** i postotak popusta izračunat iz nje (Zakon o zaštiti potrošača, čl. 19),
-- **strojno čitljiv cjenik (CSV, roba i usluge)** na javnoj adresi `/cjenik/` (zadana putanja; mijenja se u postavkama, a stvarna adresa vaše trgovine piše u kartici Cjenik), s propisanim poljima i nazivom datoteke, za robu ažuriran jednom dnevno do 08:00 za tekući radni dan; usluge imaju zasebno pravilo ažuriranja pri promjeni, s arhivom od najmanje 30 dana i **zasebnom datotekom za svaki prodajni objekt** (webshop i poslovnice).
+- **strojno čitljiv cjenik (CSV, zasebno roba i usluge)** na javnoj adresi `/cjenik/` (zadana putanja; mijenja se u postavkama, a stvarna adresa vaše trgovine piše u kartici Cjenik), s propisanim poljima i nazivom datoteke. Izmijenjeni cjenik objavljuje se do 11:00 na dan izmjene, zamijenjeni ostaje dostupan još 15 dana, a svaki prodajni objekt (webshop i poslovnice) ima **zasebnu datoteku**, osim ako je uključen zajednički cjenik za sva prodajna mjesta.
 
 Pravna osnova: [Pravilnik o isticanju bazne cijene proizvoda](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_11_132_1583.html) i [Pravilnik o načinu objave cjenika proizvoda](https://narodne-novine.nn.hr/clanci/sluzbeni/2026_11_132_1584.html) (NN 132/2026, na snazi od 17. 11. 2026.; zamjenjuju odluke iz NN 101/2026). Referentni datum bazne (sidrene) cijene ostaje 10. 9. 2026.
 
-### Jedan dnevni izvoz robe
+### Objava samo pri promjeni
 
-[Ministarstvo gospodarstva, pojašnjenje 2.3](https://mingo.gov.hr/UserDocsImages/slike/MINGO_Poja%C5%A1njenja_dodatna%20cijena_objava%20cjenika.pdf) izričito navodi da promjene cijena robe tijekom dana ne zahtijevaju novu dnevnu datoteku. Dostupnost za automatizirano preuzimanje nije zahtjev za regeneriranje pri svakom spremanju proizvoda. Pojašnjenje još navodi izvorni datum primjene; kasnije izmjene NN 110/2026 imaju prednost.
-
-Za katalog robe: **Cjenik → Regeneriraj pri promjeni cijene → Nikad (samo dnevno)**. Nakon spremanja kliknite **Ponovno zakaži zadatke** kako biste uklonili ranije zakazane dodatne izvoze. Dnevno generiranje u 06:00, ručno pokretanje, snimanje prve cijene i povijest cijena ostaju uključeni. Manje radnje u redu zadataka sastavljaju **isti dnevni cjenik**, a ne objavljuju novi cjenik za svaki proizvod.
-
-Postojeći zadani način „Svi proizvodi” stvara dodatne izvoze i nije zakonski potreban za robu. Ova izmjena ne prepisuje spremljene postavke ni zadane vrijednosti; način rada treba izabrati u postojećoj postavci. Za usluge provjerite zasebno pravilo iz točke II. Odluke i pojašnjenja 2.3. Povijesne sidrene cijene ne smiju se zamijeniti današnjima.
+Jednom dnevno (zadano u 06:00) cijeli katalog se ponovno izrađuje, a nova datoteka objavljuje se samo ako se cjenik promijenio. Uz zadanu postavku **Cjenik → Objava pri promjeni proizvoda → Pri promjeni** spremanje proizvoda ponovno izrađuje samo njegove redke i objavljuje novi cjenik nakon odgode (zadano 10 minuta); prije 11:00 objava se pomiče na najkasnije 10:55. Veliki uvoz objavljuje se jednom, ne nakon svakog dijela. „Samo dnevna provjera” objavljuje izmjene tek pri dnevnoj provjeri. Povijesne sidrene cijene ne smiju se zamijeniti današnjima.
 
 ## Značajke
 
 - Oznaka sidrene cijene na popisu proizvoda, stranici proizvoda, varijacijama, košarici, mini-košarici i blagajni; podaci za blokovsku košaricu putem Store API-ja; shortcode `[sidrena_cijena]` za bannere.
 - Povijest cijena i najniža cijena u 30 dana; referenca ostaje zamrznuta tijekom postupnih sniženja.
-- XML i CSV cjenik s poljima naziv, šifra, marka, jedinica mjere, cijena za jedinicu mjere, maloprodajna cijena + posebni oblik prodaje, sidrena cijena, barkod, dostupnost; usluge s vlastitim skupom polja.
+- CSV cjenik robe sa stupcima naziv, šifra, marka, neto količina, jedinica mjere, maloprodajna cijena, posebni oblik prodaje, cijena za jedinicu mjere, barkod, EAN barkod i bazna cijena; usluge s vlastitim skupom stupaca.
 - Cjenik robe i cjenik usluga (CSV) po prodajnom objektu ili jedan za sva prodajna mjesta, naziv `OIB_oblik_adresa_oznaka_ROBA_broj_GGGGMMDD_SSMM.csv`, javne adrese `/cjenik/`, `/cjenik/latest_roba.csv`, `/cjenik/latest_usluge.csv`, `/cjenik/{oznaka}/latest_roba.csv`, `/cjenik/index.json`.
 - Alati: snimanje trenutnih redovnih cijena kao sidrenih (akcijske se nikad ne kopiraju), CSV uvoz/izvoz, automatsko snimanje na budući datum (npr. „bazna cijena” od 17. 11. 2026.).
 - Action Scheduler ili WP-Cron, vanjski cron URL, WP-CLI naredbe (`wp scwc …`), HPOS kompatibilnost, predlošci koje tema može nadjačati, kuke s prefiksom `scwc_`.
@@ -125,7 +121,7 @@ Dodatak provjerava [GitHub Releases](../../releases) i WordPress prikazuje uobi�
 ## Brzi start
 
 1. Aktivirajte dodatak.
-2. **WooCommerce → Sidrena cijena → Prodajni objekti**: unesite adresu, oznaku i broj pohrane webshopa; dodajte poslovnice ako ih imate.
+2. **WooCommerce → Sidrena cijena → Prodajni objekti**: unesite adresu i oznaku webshopa; dodajte poslovnice ako ih imate. U kartici **Cjenik** upišite OIB / matični broj trgovca.
 3. **Referentne cijene**: provjerite datum 10. 9. 2026.; po potrebi dodajte FMCG kategorije s datumom 2. 5. 2025.
 4. **WooCommerce → Sidrena cijena – Alati**: uvezite provjerene povijesne cijene s pripadajućim datumom. Današnje redovne cijene nemojte označiti kao cijene od 10. 9. 2026.
 5. **Cjenik**: kliknite „Generiraj sada”, pričekajte dovršetak zakazanih radnji i otvorite adresu prikazanu u statusnom okviru (zadano `https://vasa-trgovina.hr/cjenik/`; ako ste promijenili putanju, npr. u `cijene`, adresa je `/cijene/`).

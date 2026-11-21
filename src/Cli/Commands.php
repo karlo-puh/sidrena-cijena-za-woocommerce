@@ -71,7 +71,7 @@ final class Commands {
 	}
 
 	/**
-	 * Generira cjenik (XML/CSV) sada.
+	 * Provjerava cjenik sada i objavljuje novi CSV ako se promijenio.
 	 *
 	 * @param string[]             $args  Positional args.
 	 * @param array<string,mixed>  $assoc Named args.
@@ -83,6 +83,9 @@ final class Commands {
 		}
 		foreach ( $result->files as $file ) {
 			WP_CLI::success( sprintf( 'Generirano [%s]: %s (%d proizvoda, %d usluga)', (string) ( $file['outlet'] ?? '-' ), $file['name'], $file['products'], $file['services'] ) );
+		}
+		if ( [] === $result->files ) {
+			WP_CLI::success( 'Cjenik se nije promijenio; nova datoteka nije objavljena.' );
 		}
 	}
 
