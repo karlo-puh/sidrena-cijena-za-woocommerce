@@ -404,10 +404,10 @@ final class Plugin {
 			ChangeTracker::class,
 			static fn( Container $c ) => new ChangeTracker(
 				$GLOBALS['wpdb'],
-				static function () use ( $c ): void {
+				static function ( bool $now = false ) use ( $c ): void {
 					$settings = $c->get( Settings::class );
 					if ( (bool) $settings->get( 'price_list.enabled', true ) && 'never' !== $settings->get( 'price_list.regenerate_on_change', 'all' ) ) {
-						$c->get( Scheduler::class )->scheduleGenerationSoon( (int) $settings->get( 'price_list.debounce_seconds', 300 ), 'change' );
+						$c->get( Scheduler::class )->scheduleGenerationSoon( $now ? 0 : (int) $settings->get( 'price_list.debounce_seconds', 300 ), 'change' );
 					}
 				},
 				! (bool) $c->get( Settings::class )->get( 'price_list.include_out_of_stock', true )

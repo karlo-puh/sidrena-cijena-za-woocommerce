@@ -16,14 +16,14 @@ class ChangeTracker {
 
 	public const META = '_scwc_pl_changed';
 
-	/** @var callable():void */
+	/** @var callable(bool):void */
 	private $schedule;
 	/** @var array<int,true> Products inside wc_update_product_stock() (orders, stock syncs). */
 	private array $stockUpdate = [];
 
 	/**
 	 * @param \wpdb|object    $wpdb        Database.
-	 * @param callable():void $schedule    Queues a debounced price-list run.
+	 * @param callable(bool):void $schedule Queues a price-list change run: debounced, or right away (true).
 	 * @param bool            $stockMatters Out-of-stock products are left out of the list, so stock changes matter.
 	 */
 	public function __construct( private readonly object $wpdb, callable $schedule, private readonly bool $stockMatters = false ) {
@@ -102,7 +102,7 @@ class ChangeTracker {
 		foreach ( $ids as $one ) {
 			update_post_meta( $one, self::META, $now );
 		}
-		( $this->schedule )();
+		( $this->schedule )( false );
 	}
 
 	public function count(): int {
@@ -144,7 +144,8 @@ class ChangeTracker {
 		}
 	}
 
+	/** The next batch of a large change, or marks made during a full build: run without the debounce. */
 	public function scheduleFollowUp(): void {
-		( $this->schedule )();
+		( $this->schedule )( true );
 	}
 }

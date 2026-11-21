@@ -35,7 +35,10 @@ build, 13 GB kept.
   with its ID, ordered by ID).
 - Between full builds, product saves mark the product as changed (postmeta flag; a variable parent marks its
   variations). A debounced job takes up to 200 marked IDs, rebuilds only those rows, merges them into the kept
-  rows file, writes the CSVs and publishes if changed. More than 2,000 marked → one full build instead.
+  rows file, writes the CSVs and publishes if changed. While more marks wait (import, bulk edit) a run only merges
+  its batch and starts the next one right away; the last batch publishes, so a burst gives one file
+  (from 10:45 to 11:00 every batch publishes; a run with no marks left publishes rows merged earlier). More than
+  2,000 marked → one full build instead.
   Stock-only updates are not marked (availability is no longer a column; the 06:00 build covers stock-based
   exclusion). Price changes found by the nightly sweep mark their products the same way.
 - Bulk events (snapshot, CSV import, settings change, permanent delete) queue a full build as today.

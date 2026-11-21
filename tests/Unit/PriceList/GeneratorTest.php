@@ -222,7 +222,7 @@ final class GeneratorTest extends TestCase {
 			2 => '1.0',
 			5 => '1.0',
 		];
-		$this->changes->shouldReceive( 'count' )->andReturn( 3, 0 );
+		$this->changes->shouldReceive( 'count' )->andReturn( 3 );
 		$this->changes->shouldReceive( 'take' )->once()->with( Generator::CHANGE_BATCH )->andReturn( $marks );
 		$this->changes->shouldReceive( 'clear' )->once()->with( $marks );
 		$this->changes->shouldReceive( 'scheduleFollowUp' )->never();
@@ -248,16 +248,55 @@ final class GeneratorTest extends TestCase {
 		self::assertFalse( $this->generator( null, $collector )->pending() );
 	}
 
-	public function test_change_run_with_more_marks_than_a_batch_schedules_a_follow_up(): void {
+	public function test_a_large_change_is_merged_in_batches_and_published_once(): void {
 		$this->generator()->run();
-		$this->changes->shouldReceive( 'count' )->andReturn( 250, 50 );
+		$this->clock->set( '2026-10-01 03:00:00' );
+		$collector = \Mockery::mock( Collector::class );
+		// Batch 1 of 2: more marks wait, so the rows are merged but nothing is published yet.
+		$this->changes->shouldReceive( 'count' )->andReturn( 2, 2 );
+		$this->changes->shouldReceive( 'take' )->once()->andReturn( [ 1 => '1.0' ] );
+		$this->changes->shouldReceive( 'clear' )->once()->with( [ 1 => '1.0' ] );
+		$this->changes->shouldReceive( 'scheduleFollowUp' )->once();
+		$collector->shouldReceive( 'itemsFor' )->once()->with( [ 1 ] )->andReturn( [ 1 => self::goods( 1, 7.0 ) ] );
+		Functions\expect( 'update_option' )->never(); // Not a completed check: the public list is not updated yet.
+		self::assertNull( $this->generator( null, $collector )->step( 'change' ) );
+
+		// Batch 2 (the last): both changes are published in one file.
+		Functions\expect( 'update_option' )->once();
+		$this->changes  = \Mockery::mock( ChangeTracker::class );
+		$this->changes->shouldReceive( 'count' )->andReturn( 1 );
+		$this->changes->shouldReceive( 'take' )->once()->andReturn( [ 2 => '1.0' ] );
+		$this->changes->shouldReceive( 'clear' )->once();
+		$this->changes->shouldReceive( 'scheduleFollowUp' )->never();
+		$collector->shouldReceive( 'itemsFor' )->once()->with( [ 2 ] )->andReturn( [ 2 => self::goods( 2, 6.0 ) ] );
+		$last = $this->generator( null, $collector )->run( 'change' );
+		self::assertSame( [ '12345678901_webshop_ulica-1_web1_ROBA_2_20261001_0500.csv' ], array_column( $last->files, 'name' ) );
+		$lines = $this->lines( $last->files[0]['name'] );
+		self::assertStringContainsString( ';7.00;', $lines[1] );
+		self::assertStringContainsString( ';6.00;', $lines[2] );
+	}
+
+	public function test_batches_publish_one_by_one_near_the_11_00_deadline(): void {
+		$this->generator()->run();
+		$this->clock->set( '2026-10-01 08:50:00' ); // 10:50 local.
+		$this->changes->shouldReceive( 'count' )->andReturn( 5 );
 		$this->changes->shouldReceive( 'take' )->once()->andReturn( [ 1 => '1.0' ] );
 		$this->changes->shouldReceive( 'clear' )->once();
-		$this->changes->shouldReceive( 'scheduleFollowUp' )->once();
+		$this->changes->shouldReceive( 'scheduleFollowUp' )->never();
 		$collector = \Mockery::mock( Collector::class );
-		$collector->shouldReceive( 'itemsFor' )->once()->andReturn( [ 1 => self::goods( 1 ) ] );
+		$collector->shouldReceive( 'itemsFor' )->once()->andReturn( [ 1 => self::goods( 1, 7.0 ) ] );
+		self::assertCount( 1, $this->generator( null, $collector )->run( 'change' )->files );
+	}
 
-		self::assertTrue( $this->generator( null, $collector )->run( 'change' )->ok() );
+	public function test_change_run_without_marks_publishes_rows_merged_earlier(): void {
+		$this->generator()->run();
+		$rows = $this->storage->tmpPath( Generator::ROWS );
+		file_put_contents( $rows, str_replace( '"price":10', '"price":11', (string) file_get_contents( $rows ) ) ); // A merged, unpublished batch.
+		$collector = \Mockery::mock( Collector::class );
+		$collector->shouldReceive( 'itemsFor' )->never();
+		$result = $this->generator( null, $collector )->run( 'change' );
+		self::assertCount( 1, $result->files );
+		self::assertStringContainsString( ';11.00;', $this->lines( $result->files[0]['name'] )[1] );
 	}
 
 	public function test_change_run_without_marks_publishes_nothing(): void {

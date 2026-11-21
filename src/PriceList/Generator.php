@@ -102,7 +102,8 @@ class Generator {
 		if ( 'change' === $reason && ! $this->pending() && $rowsFresh ) {
 			$marked = $this->changes->count();
 			if ( 0 === $marked ) {
-				return $this->finish( [], $reason );
+				// Nothing left to rebuild; a batch merged earlier may still be unpublished (publish skips if unchanged).
+				return $this->publish( $this->writeAll( $targets, $this->storage->tmpPath( self::ROWS ) ), $reason );
 			}
 			if ( $marked <= self::FULL_ABOVE ) {
 				return $this->changeRun( $targets, $reason );
@@ -116,19 +117,35 @@ class Generator {
 	 *
 	 * @param array<int,array{outlet:?Outlet,key:string}> $targets Outputs per outlet.
 	 */
-	private function changeRun( array $targets, string $reason ): GenerationResult {
+	private function changeRun( array $targets, string $reason ): ?GenerationResult {
 		$marks = $this->changes->take( self::CHANGE_BATCH );
 		$items = $this->collector->itemsFor( array_keys( $marks ) );
 		ksort( $items );
 		$merged = $this->storage->tmpPath( 'rows.ndjson' );
 		$this->merge( $this->storage->tmpPath( self::ROWS ), $items, $merged );
-		$result = $this->publish( $this->writeAll( $targets, $merged ), $reason );
-		rename( $merged, $this->storage->tmpPath( self::ROWS ) );
-		$this->changes->clear( $marks );
-		if ( $this->changes->count() > 0 ) {
+		if ( $this->changes->count() > count( $marks ) && ! $this->nearDeadline() ) {
+			// More products are waiting (an import or bulk edit): merge this batch, publish once after the last one.
+			$this->keepRows( $merged );
+			$this->changes->clear( $marks );
 			$this->changes->scheduleFollowUp();
+			return null; // Not a completed check yet.
 		}
+		$result = $this->publish( $this->writeAll( $targets, $merged ), $reason );
+		$this->keepRows( $merged );
+		$this->changes->clear( $marks );
 		return $result;
+	}
+
+	/** 10:45–11:00: publish every batch, so an import running into the deadline cannot hold finished prices. */
+	private function nearDeadline(): bool {
+		$time = $this->clock->nowLocal()->format( 'H:i' );
+		return $time >= '10:45' && $time < '11:00';
+	}
+
+	private function keepRows( string $path ): void {
+		if ( ! rename( $path, $this->storage->tmpPath( self::ROWS ) ) ) {
+			throw new RuntimeException( 'Unable to keep price-list rows.' );
+		}
 	}
 
 	/**
@@ -143,9 +160,14 @@ class Generator {
 			throw new RuntimeException( 'Unable to update price-list rows.' );
 		}
 		try {
-			$put = static function ( $item ) use ( $dst ): void {
-				if ( null !== $item && false === fwrite( $dst, ItemStream::encode( $item ) ) ) {
-					throw new RuntimeException( 'Unable to write price-list rows.' );
+			$write = static function ( string $line ) use ( $dst ): void {
+				if ( strlen( $line ) !== fwrite( $dst, $line ) ) {
+					throw new RuntimeException( 'Unable to write price-list rows.' ); // E.g. disk full: keep the old rows.
+				}
+			};
+			$put   = static function ( $item ) use ( $write ): void {
+				if ( null !== $item ) {
+					$write( ItemStream::encode( $item ) );
 				}
 			};
 			$ids = array_keys( $items );
@@ -160,12 +182,13 @@ class Generator {
 					$put( $items[ $ids[ $i++ ] ] ); // Replaced, or dropped when null.
 					continue;
 				}
-				if ( false === fwrite( $dst, $line ) ) {
-					throw new RuntimeException( 'Unable to write price-list rows.' );
-				}
+				$write( $line );
 			}
 			for ( ; $i < $n; $i++ ) {
 				$put( $items[ $ids[ $i ] ] );
+			}
+			if ( ! fflush( $dst ) ) {
+				throw new RuntimeException( 'Unable to write price-list rows.' );
 			}
 		} finally {
 			fclose( $src );
@@ -219,7 +242,7 @@ class Generator {
 			return null;
 		}
 		$result = $this->publish( $this->writeAll( $targets, $rowsPath ), (string) $state['reason'] );
-		rename( $rowsPath, $this->storage->tmpPath( self::ROWS ) );
+		$this->keepRows( $rowsPath );
 		$this->storage->writeAtomic( $this->storage->tmpPath( self::ROWS_CONFIG ), $fingerprint );
 		$this->changes->clearBefore( (float) $state['started'] ); // Marks set during the build stay for a change run.
 		$this->clearState();

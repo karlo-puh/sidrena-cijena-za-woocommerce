@@ -12,6 +12,8 @@ use SidrenaCijena\Tests\TestCase;
 final class ChangeTrackerTest extends TestCase {
 	private FakeWpdb $wpdb;
 	private int $scheduled = 0;
+	/** @var bool[] */
+	private array $now = [];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -20,8 +22,9 @@ final class ChangeTrackerTest extends TestCase {
 	}
 
 	private function tracker(): ChangeTracker {
-		return new ChangeTracker( $this->wpdb, function (): void {
+		return new ChangeTracker( $this->wpdb, function ( bool $now ): void {
 			++$this->scheduled;
+			$this->now[] = $now;
 		} );
 	}
 
@@ -41,6 +44,9 @@ final class ChangeTrackerTest extends TestCase {
 
 		$this->tracker()->mark( 0 );
 		self::assertSame( 1, $this->scheduled, 'invalid IDs are ignored' );
+
+		$this->tracker()->scheduleFollowUp();
+		self::assertSame( [ false, true ], $this->now, 'saves are debounced, follow-ups run right away' );
 	}
 
 	public function test_saves_inside_a_wc_stock_update_are_not_marked_unless_stock_matters(): void {
